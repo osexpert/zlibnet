@@ -61,7 +61,8 @@ namespace ZLibNet
 				bool fileMatch = entryFileName.WildcardMatch(fileSpec.FileName, true);
 				bool dirMath = entryDirName.WildcardMatch(fileSpec.DirName, true);
 
-				return dirMath && fileMatch;
+				if (dirMath && fileMatch)
+					return true;
 			}
 
 			return false;

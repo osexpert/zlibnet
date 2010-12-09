@@ -6,23 +6,29 @@ using System.Runtime.CompilerServices;
 [assembly: AssemblyDescription("zlibnet")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("http://zlibnet.codeplex.com")]
-[assembly: AssemblyCopyright("Copyright (C) Gerry Shaw, Dave F. Baskin, Jean-loup Gailly, Mark Adler")]
+[assembly: AssemblyCopyright("Copyright (C) Jean-loup Gailly, Mark Adler, Gerry Shaw, Dave F. Baskin, Gunnar Dalsnes")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
-[assembly: AssemblyVersion("1.0")]
+[assembly: AssemblyVersion("0.9.0.*")]
 
 
 public static class ZLibDll
 {
-	internal const string ZLibVersion = "1.2.5";
-
-#if ANYCPU
-	internal const string Name = "zlib.dll";
-#elif X86
+	/// <summary>
+	/// 32bit zlib dll in same folder as application
+	/// </summary>
 	internal const string Name = "zlib32.dll";
-#elif X64
-	internal const string Name = "zlib64.dll";
-#endif
+	/// <summary>
+	/// 64bit zlib dll in same folder as application
+	/// </summary>
+//	internal const string Name = "zlib64.dll";
+	/// <summary>
+	/// 32bit and 64bit zlib dll's renamed to same name zlib.dll and:
+	/// -32bit version is placed in C:\WINDOWS\SysWOW64
+	/// -64bit version is placed in C:\WINDOWS\system32
+	/// The correct dll will be used automatically.
+	/// </summary>
+//	internal const string Name = "zlib.dll";
 }
 
 // This will not compile with Visual Studio.  If you want to build a signed

@@ -12,8 +12,8 @@ namespace ZLibNet
 
         string   _name = String.Empty;
         uint     _crc = 0;
-        long     _compressedLength = -1;
-        long     _uncompressedLength = -1;
+        long     _compressedLength;
+        long     _uncompressedLength;
         byte[]   _extraField = null;
         string   _comment = String.Empty;
         DateTime _modifiedTime = DateTime.Now;
@@ -21,6 +21,12 @@ namespace ZLibNet
 		CompressionMethod _method = CompressionMethod.Deflated;
 		int _level  = (int) CompressionLevel.Default;
 		bool _isDirectory;
+		/// <summary>
+		/// Utf8 filename/comment.
+		/// Not supported by Windows Compressed Folders
+		/// </summary>
+		bool _UTF8Encoding;
+		bool _zip64;
 
 		/// <summary>Initializes a instance of the <see cref="ZipEntry"/> class with the given name.</summary>
 		/// <param name="name">The name of entry that will be stored in the directory of the zip file.</param>
@@ -38,40 +44,74 @@ namespace ZLibNet
 
         /// <summary>Creates a new Zip file entry reading values from a zip file.</summary>
         internal ZipEntry(IntPtr handle) {
-            ZipEntryInfo entryInfo;
+            ZipEntryInfo64 entryInfo;
             int result = 0;
             unsafe {
-                result = ZipLib.unzGetCurrentFileInfo(handle, &entryInfo, null, 0, null, 0, null, 0);
+                result = ZipLib.unzGetCurrentFileInfo64(handle, &entryInfo, null, 0, null, 0, null, 0);
             }
             if (result != 0) {
-                throw new ZipException("Could not read entries from zip file " + Name, result);
+				throw new ZipException("Could not read entry from zip file " + Name, result);
             }
 
-            ExtraField = new byte[entryInfo.ExtraFieldLength];
+			_extraField = new byte[entryInfo.ExtraFieldLength];
             byte[] entryNameBuffer = new byte[entryInfo.FileNameLength];
             byte[] commentBuffer   = new byte[entryInfo.CommentLength];
 
             unsafe {
-                result = ZipLib.unzGetCurrentFileInfo(handle, &entryInfo,
+                result = ZipLib.unzGetCurrentFileInfo64(handle, &entryInfo,
                     entryNameBuffer, (uint) entryNameBuffer.Length,
-                    ExtraField,      (uint) ExtraField.Length,
+					_extraField, (uint)_extraField.Length,
                     commentBuffer,   (uint) commentBuffer.Length);
             }
 
 			if (result != 0) {
-                throw new ZipException("Could not read entries from zip file " + Name, result);
+                throw new ZipException("Could not read entry from zip file " + Name, result);
             }
 
-			_name = ZipLib.OEMEncoding.GetString(entryNameBuffer);
-			_comment = ZipLib.OEMEncoding.GetString(commentBuffer);
-            _crc = entryInfo.Crc;
-            _compressedLength = entryInfo.CompressedSize;
-            _uncompressedLength = entryInfo.UncompressedSize;
+			this._UTF8Encoding = BitFlag.IsSet(entryInfo.Flag, ZipEntryFlag.UTF8);
+			Encoding encoding = this._UTF8Encoding ? Encoding.UTF8 : ZipLib.OEMEncoding;
+
+			_name = encoding.GetString(entryNameBuffer);
+			//null or empty string if empty buffer?
+			_comment = encoding.GetString(commentBuffer);
+			_crc = entryInfo.Crc;
+            _compressedLength = (long)entryInfo.CompressedSize;
+			_uncompressedLength = (long)entryInfo.UncompressedSize;
             _method = (CompressionMethod) entryInfo.CompressionMethod;
 			_modifiedTime = entryInfo.ZipDateTime;
 			_fileAttributes = (FileAttributes)entryInfo.ExternalFileAttributes;
 			_isDirectory = InterpretIsDirectory();
         }
+
+		//private ExtraField[] GetExtraFields(byte[] _extraFields)
+		//{
+		//    throw new NotImplementedException();
+		//}
+
+		//struct ExtraField
+		//{
+		//    public Int16 Tag;
+		//    public byte[] Data;
+		//}
+
+		//private byte[] GetUTF8Name(byte[] ExtraField)
+		//{
+		//    byte[] data = GetTag(ExtraField, 0x7075);
+		//    if (data == null)
+		//        return null;
+		//}
+
+		//private byte[] GetUTF8Comment(byte[] ExtraField)
+		//{
+		//    byte[] data = GetTag(ExtraField, 0x6375);
+		//    return null;
+		//    BitConverter.ToInt16(
+		//}
+
+		//private byte[] GetTag(byte[] ExtraField, int p)
+		//{
+		//    throw new NotImplementedException();
+		//}
 
 		private bool InterpretIsDirectory()
 		{
@@ -103,6 +143,7 @@ namespace ZLibNet
                     if (value.Length > 0xffff) {
                         throw new ArgumentOutOfRangeException("Comment cannot not exceed 65535 characters.");
                     }
+					//FIXME: sjekk om UTF8! Men hvor? Kan hende vi ikke har satt utf8 enda...
                     if (!IsAscii(value)) {
                         throw new ArgumentException("Name can only contain Ascii 8 bit characters.");
                     }
@@ -120,6 +161,19 @@ namespace ZLibNet
         public uint Crc {
             get { return _crc; }
         }
+
+		// true = Use UTF8 for name and comment
+		public bool UTF8Encoding
+		{
+			get
+			{
+				return this._UTF8Encoding;
+			}
+			set
+			{
+				this._UTF8Encoding = value;
+			}
+		}
 
         /// <summary>Gets and sets the optional extra field data for the entry.</summary>
         /// <remarks>ExtraField data cannot exceed 65535 bytes.</remarks>
@@ -152,6 +206,18 @@ namespace ZLibNet
 		    }
 		}
 
+		public bool Zip64
+		{
+			get
+			{
+				return this._zip64;
+			}
+			set
+			{
+				this._zip64 = value;
+			}
+		}
+
         /// <summary>Gets the size of the uncompressed entry data in in bytes.</summary>
         public long Length {
             get { return _uncompressedLength; }
@@ -177,6 +243,7 @@ namespace ZLibNet
                 if (value.Length > 0xffff) {
                     throw new ArgumentOutOfRangeException("Name cannot not exceed 65535 characters.");
                 }
+				//FIXME: sjekk om UTF8! Men hvor? Kan hende vi ikke har satt utf8 enda...
                 if (!IsAscii(value)) {
                     throw new ArgumentException("Name can only contain Ascii 8 bit characters.");
                 }

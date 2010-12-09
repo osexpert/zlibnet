@@ -7,11 +7,10 @@ using System.Collections.Generic;
 
 namespace ZLibNet
 {
-
     /// </code>
     /// </example>
-    public class ZipReader : IEnumerator<ZipEntry>, IDisposable {
-
+    public class ZipReader :  IEnumerable<ZipEntry>, IDisposable 
+	{
         /// <summary>ZipFile handle to read data from.</summary>
         IntPtr _handle = IntPtr.Zero;
 
@@ -19,13 +18,13 @@ namespace ZLibNet
         string _fileName = null;
 
         /// <summary>Contents of zip file directory.</summary>
-        ZipEntryCollection _entries = null;
+//        ZipEntryCollection _entries = null;
 
         /// <summary>Global zip file comment.</summary>
         string _comment = null;
 
         /// <summary>True if an entry is open for reading.</summary>
-        bool _entryOpen = false;
+//        bool _entryOpen = false;
 
         /// <summary>Current zip entry open for reading.</summary>
         ZipEntry _current = null;
@@ -96,40 +95,45 @@ namespace ZLibNet
             }
         }
 
-        /// <summary>Gets a <see cref="ZipEntryCollection"/> object that contains all the entries in the zip file directory.</summary>
-        public ZipEntryCollection Entries {
-            get {
-                if (_entries == null) {
-                    _entries = new ZipEntryCollection();
+		/////// <summary>Gets a <see cref="ZipEntryCollection"/> object that contains all the entries in the zip file directory.</summary>
+		//Commented. Can't risk someone accessing this while enumerating.
+		//If we should have it, we'd have to fill it in the ctor.
+		//public ZipEntryCollection Entries
+		//{
+		//    get
+		//    {
+		//        if (_entries == null)
+		//        {
+		//            _entries = new ZipEntryCollection();
 
-                    int result = ZipLib.unzGoToFirstFile(_handle);
-					if (result == (int)ErrorCode.EndOfListOfFile)
-					{
-						// last entry found - not an exceptional case
-						return _entries;
-					}
-					else if (result < 0)
-						throw new ZipException("unzGoToFirstFile failed.", result);
+		//            int result = ZipLib.unzGoToFirstFile(_handle);
+		//            if (result == ZipReturnCode.EndOfListOfFile)
+		//            {
+		//                // last entry found - not an exceptional case
+		//                return _entries;
+		//            }
+		//            else if (result < 0)
+		//                throw new ZipException("unzGoToFirstFile failed.", result);
 
-                    while (true)
-					{
-                        ZipEntry entry = new ZipEntry(_handle);
-                        _entries.Add(entry);
-                        result = ZipLib.unzGoToNextFile(_handle);
-						if (result == (int)ErrorCode.EndOfListOfFile)
-						{
-							// last entry found - not an exceptional case
-							break;
-						}
-						else if (result < 0)
-							throw new ZipException("unzGoToNextFile failed.", result);
-                    }
-                }
-                return _entries;
-            }
-        }
+		//            while (true)
+		//            {
+		//                ZipEntry entry = new ZipEntry(_handle);
+		//                _entries.Add(entry);
+		//                result = ZipLib.unzGoToNextFile(_handle);
+		//                if (result == ZipReturnCode.EndOfListOfFile)
+		//                {
+		//                    // last entry found - not an exceptional case
+		//                    break;
+		//                }
+		//                else if (result < 0)
+		//                    throw new ZipException("unzGoToNextFile failed.", result);
+		//            }
+		//        }
+		//        return _entries;
+		//    }
+		//}
 
-		object IEnumerator.Current
+		ZipEntry Current
 		{
 			get
 			{
@@ -137,35 +141,39 @@ namespace ZLibNet
 			}
 		}
 
-        /// <summary>Gets the current entry in the zip file..</summary>
-        public ZipEntry Current {
-            get {
-                return _current;
-            }
-        }
-
 		public IEnumerator<ZipEntry> GetEnumerator()
 		{
-			return this;
+			// WIll protect agains most common case, but if someone gets two enumerators up front and uses them,
+			// we wont catch it.
+			if (_current != null)
+				throw new InvalidOperationException("Entry already open/enumeration already in progress");
+			return new ZipEntryEnumerator(this);
 		}
 
-        /// <summary>Advances the enumerator to the next element of the collection.</summary>
+		IEnumerator IEnumerable.GetEnumerator()
+		{
+			return GetEnumerator();
+			//if (_current != null)
+			//    throw new InvalidOperationException("Entry already open/enumeration already in progress");
+			//return new Enumer(this);
+		}
+
+	    /// <summary>Advances the enumerator to the next element of the collection.</summary>
         /// <summary>Sets <see cref="Current"/> to the next zip entry.</summary>
         /// <returns><c>true</c> if the next entry is not <c>null</c>; otherwise <c>false</c>.</returns>
-        public bool MoveNext() {
-            // close any open entry
-            CloseEntry();
+        bool MoveNext() {
 
             int result;
-            if (_current == null) {
+			if (_current == null) {
                 result = ZipLib.unzGoToFirstFile(_handle);
             } else {
+				CloseCurrentEntry();
                 result = ZipLib.unzGoToNextFile(_handle);
             }
 
-			if (result == (int)ErrorCode.EndOfListOfFile)
+			if (result == ZipReturnCode.EndOfListOfFile)
 			{
-				// last entry found - not an exceptional case
+				// no more entries
 				_current = null;
 			}
 			else if (result < 0)
@@ -175,39 +183,38 @@ namespace ZLibNet
 			else
 			{
 				// entry found
-				OpenEntry();
+				OpenCurrentEntry();
 			}
 
             return (_current != null);
         }
 
         /// <summary>Move to just before the first entry in the zip directory.</summary>
-        public void Reset() {
-            CloseEntry();
-            _current = null;
+        void Reset() {
+			CloseCurrentEntry();
         }
 
-        /// <summary>Seek to the specified entry.</summary>
-        /// <param name="entryName">The name of the entry to seek to.</param>
-        public void Seek(string entryName) {
+		private void CloseCurrentEntry()
+		{
+			if (_current != null)
+			{
+				int result = ZipLib.unzCloseCurrentFile(_handle);
+				if (result < 0)
+				{
+					throw new ZipException("Could not close zip entry.", result);
+				}
+				_current = null;
+			}
+		}
 
-            CloseEntry();
-            int result = ZipLib.unzLocateFile(_handle, entryName, 0);
-            if (result < 0) {
-                string msg = String.Format("Could not locate entry named '{0}'.", entryName);
-                throw new ZipException(msg, result);
-            }
-            OpenEntry();
-        }
-
-        private void OpenEntry() {
-            _current = new ZipEntry(_handle);
+		private void OpenCurrentEntry()
+		{
+			_current = new ZipEntry(_handle);
             int result = ZipLib.unzOpenCurrentFile(_handle);
             if (result < 0) {
                 _current = null;
 				throw new ZipException("Could not open entry for reading.", result);
             }
-            _entryOpen = true;
         }
 
         /// <summary>Uncompress a block of bytes from the current zip entry and writes the data in a given buffer.</summary>
@@ -225,19 +232,9 @@ namespace ZLibNet
             return bytesRead;
         }
 
-        private void CloseEntry() {
-            if (_entryOpen) {
-                int result = ZipLib.unzCloseCurrentFile(_handle);
-                if (result < 0) {
-	                 throw new ZipException("Could not close zip entry.", result);
-                }
-                _entryOpen = false;
-            }
-        }
-
         private void CloseFile() {
             if (_handle != IntPtr.Zero) {
-                CloseEntry();
+                CloseCurrentEntry();
                 int result = ZipLib.unzClose(_handle);
                 if (result < 0) {
                     throw new ZipException("Could not close zip file.", result);
@@ -245,5 +242,46 @@ namespace ZLibNet
                 _handle = IntPtr.Zero;
             }
         }
+
+
+		class ZipEntryEnumerator : IEnumerator<ZipEntry>
+		{
+			ZipReader pReader;
+			public ZipEntryEnumerator(ZipReader zr)
+			{
+				pReader = zr;
+			}
+			public ZipEntry Current
+			{
+				get { return pReader._current; }
+			}
+			public void Dispose()
+			{
+				pReader.CloseCurrentEntry();
+			}
+			object IEnumerator.Current
+			{
+				get { return Current; }
+			}
+			public bool MoveNext()
+			{
+				return pReader.MoveNext();
+			}
+			public void Reset()
+			{
+				pReader.Reset();
+			}
+		}
     }
+
+	//public class ZipEntryCollection : List<ZipEntry>
+	//{
+	//    public ZipEntryCollection()
+	//    {
+	//    }
+	//    public ZipEntryCollection(IEnumerable<ZipEntry> entries)
+	//        : base(entries)
+	//    {
+	//    }
+	//}
 }

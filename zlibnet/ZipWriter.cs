@@ -5,45 +5,7 @@ using System.Diagnostics;
 
 namespace ZLibNet {
 
-    /// <summary>Provides support for writing files in the ZIP file format. Includes support for both compressed and uncompressed entries.</summary>
-    /// <example>This example shows how to create a ZIP file.
-    /// <code>
-    /// public static void Add(string zipFileName, string[] entryPatterns) {
-    ///     string currentDirectory = Directory.GetCurrentDirectory();
-    ///     Console.WriteLine("Creating {0}", zipFileName);
-    /// 
-    ///     ZipWriter writer = new ZipWriter(zipFileName);
-    /// 
-    ///     // buffer to hold temp bytes
-    ///     byte[] buffer = new byte[4096];
-    ///     int byteCount;
-    /// 
-    ///     // add files to archive
-    ///     foreach (string pattern in entryPatterns) {
-    ///         foreach (string path in Directory.GetFiles(currentDirectory, pattern)) {
-    ///             string fileName = Path.GetFileName(path);
-    ///             Console.Write("Adding {0}", fileName);
-    /// 
-    ///             ZipEntry entry = new ZipEntry(fileName);
-    ///             entry.ModifiedTime = File.GetLastWriteTime(fileName);
-    ///             entry.Comment = "local file comment";
-    /// 
-    ///             writer.AddEntry(entry);
-    /// 
-    ///             FileStream reader = File.OpenRead(entry.Name);
-    ///             while ((byteCount = reader.Read(buffer, 0, buffer.Length)) > 0) {
-    ///                 Console.Write(".");
-    ///                 writer.Write(buffer, 0, byteCount);
-    ///             }
-    ///             reader.Close();
-    ///             Console.WriteLine();
-    ///         }
-    ///     }
-    /// 
-    ///     writer.Close();
-    /// }
-    /// </code>
-    /// </example>
+   
     public class ZipWriter : IDisposable {
 
 		//public CompressionMethod Method = CompressionMethod.Deflated;
@@ -70,7 +32,7 @@ namespace ZLibNet {
         public ZipWriter(string fileName) {
             _fileName = fileName;
 
-            _handle = ZipLib.zipOpen(fileName, 0);
+            _handle = ZipLib.zipOpen(fileName, 0 /* 0 = create new, 1 = append */ );
             if (_handle == IntPtr.Zero) {
                 string msg = String.Format("Could not open zip file '{0}' for writing.", fileName);
                 throw new ZipException(msg);
@@ -111,8 +73,6 @@ namespace ZLibNet {
             set { _comment = value; }
         }
 
-
-
         /// <summary>Creates a new zip entry in the directory and positions the stream to the start of the entry data.</summary>
         /// <param name="entry">The zip entry to be written.</param>
         /// <remarks>Closes the current entry if still active.</remarks>
@@ -130,10 +90,17 @@ namespace ZLibNet {
                     extraLength = (uint) entry.ExtraField.Length;
                 }
 
-				byte[] name = ZipLib.OEMEncoding.GetBytes(entry.GetNameForZip());
-				byte[] comment = ZipLib.OEMEncoding.GetBytes(entry.Comment);
+				uint flagBase = 0;
+				if (entry.UTF8Encoding)
+					flagBase |= (flagBase & ZipEntryFlag.UTF8);
 
-                result = ZipLib.zipOpenNewFileInZip(
+				Encoding encoding = entry.UTF8Encoding ? Encoding.UTF8 : ZipLib.OEMEncoding;
+				byte[] name = encoding.GetBytes(entry.GetNameForZip());
+				byte[] comment = null;
+				if (entry.Comment != null)
+					comment = encoding.GetBytes(entry.Comment);
+
+                result = ZipLib.zipOpenNewFileInZip4_64(
                     _handle,
 					name,
                     &info,
@@ -141,15 +108,17 @@ namespace ZLibNet {
                     extraLength,
                     null, 
 					0,
-					comment,
+					comment, //null is ok here
                     (int) entry.Method,
-                    entry.Level);//,
-//					1 << 11); UTF8 not supported by windows compressed fodlers
+                    entry.Level,
+					flagBase,
+					entry.Zip64);
             }
 
 			if (result < 0)
 				throw new ZipException("AddEntry error.", result);
 
+			//TODO: set the ZipEntry ref instead? Easier debug etc.
             _entryOpen = true;
         }
 
