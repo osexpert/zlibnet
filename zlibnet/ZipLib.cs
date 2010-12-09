@@ -2,6 +2,9 @@ using System;
 using System.IO;
 using System.Text;
 using System.Runtime.InteropServices;
+using System.Collections.Generic;
+using System.Collections;
+using System.Runtime.Serialization;
 
 namespace ZLibNet
 {
@@ -12,11 +15,17 @@ namespace ZLibNet
     ///   <para>Encryption and multi volume ZipFile (span) are not supported.  Old compressions used by old PKZip 1.x are not supported.</para>
     ///   <para>Copyright (C) 1998 Gilles Vollant.  http://www.winimage.com/zLibDll/unzip.htm</para>
     ///   <para>C# wrapper by Gerry Shaw (gerry_shaw@yahoo.com).  http://www.organicbit.com/zip/</para>
+	///   
+	/// ZipLib = MiniZip part of zlib
+	/// 
     /// </remarks>
-    internal static class ZipLib {
+    internal static class ZipLib 
+	{
 
-//		internal const string zdllName = "zlib64.dll";
-
+		const int MAX_WBITS  = 15; /* 32K LZ77 window */
+		const int	DEF_MEM_LEVEL = 8;
+		const int Z_DEFAULT_STRATEGY =   0;
+		const uint VERSIONMADEBY = 0;
 
 	       /*
             Create a zipfile.
@@ -40,17 +49,17 @@ namespace ZLibNet
             level contain the level of compression (can be Z_DEFAULT_COMPRESSION)
         */
         /// <summary>Open a new zip entry for writing.</summary>
-		[DllImport(ZLibDll.Name)]//, ExactSpelling = true)]//, CharSet = CharSet.Ansi)]
-        unsafe public static extern int zipOpenNewFileInZip(IntPtr handle,
-            byte[] entryName,
-            ZipFileEntryInfo* entryInfoPtr,
-            byte[] extraField,
-            uint extraFieldLength,
-            byte[] extraFieldGlobal,
-            uint extraFieldGlobalLength,
-            byte[] comment,
-            int method,
-            int level);
+		//[DllImport(ZLibDll.Name)]//, ExactSpelling = true)]//, CharSet = CharSet.Ansi)]
+		//unsafe public static extern int zipOpenNewFileInZip(IntPtr handle,
+		//    byte[] entryName,
+		//    ZipFileEntryInfo* entryInfoPtr,
+		//    byte[] extraField,
+		//    uint extraFieldLength,
+		//    byte[] extraFieldGlobal,
+		//    uint extraFieldGlobalLength,
+		//    byte[] comment,
+		//    int method,
+		//    int level);
 
 		[DllImport(ZLibDll.Name)]//, ExactSpelling = true)]//, CharSet = CharSet.Ansi)]
 		unsafe static extern int zipOpenNewFileInZip4_64(IntPtr handle,
@@ -73,12 +82,9 @@ namespace ZLibNet
 			uint flagBase,
 			int zip64);
 
-		const int MAX_WBITS  = 15; /* 32K LZ77 window */
-		const int	DEF_MEM_LEVEL = 8;
-		const int Z_DEFAULT_STRATEGY =   0;
-		const uint VERSIONMADEBY = 0;
 
-		public static unsafe int zipOpenNewFileInZip2(IntPtr handle,
+
+		public static unsafe int zipOpenNewFileInZip4_64(IntPtr handle,
             byte[] entryName,
             ZipFileEntryInfo* entryInfoPtr,
             byte[] extraField,
@@ -88,14 +94,18 @@ namespace ZLibNet
             byte[] comment,
             int method,
             int level,
-			uint flagBase
+			uint flagBase,
+			bool zip64
 			)
 		{
+			//TODO: bruk denne metoden + den gammle og kjør fc /b på dem. De skal være like hvis vi bruker riktige def params!
 			return zipOpenNewFileInZip4_64(handle, entryName, entryInfoPtr, extraField, extraFieldLength,
 				extraFieldGlobal, extraFieldGlobalLength, comment, method, level, 0, -MAX_WBITS, 
 				DEF_MEM_LEVEL, Z_DEFAULT_STRATEGY,
-								 null, 0, VERSIONMADEBY, flagBase, 0);
+				null, 0, VERSIONMADEBY, flagBase, zip64 ? 1 : 0);
 		}
+
+	
 
         /// <summary>Write data to the zip file.</summary>
 		[DllImport(ZLibDll.Name)]
@@ -177,8 +187,8 @@ namespace ZLibNet
         ///   <para>Zero if there was no error.</para>
         ///   <para>Otherwise <see cref="ErrorCode.EndOfListOfFile"/> if there are no more entries.</para>
         /// </returns>
-		[DllImport(ZLibDll.Name, ExactSpelling = true, CharSet = CharSet.Ansi)]
-        public static extern int unzLocateFile(IntPtr handle, string entryName, int caseSensitivity);
+		//[DllImport(ZLibDll.Name, ExactSpelling = true, CharSet = CharSet.Ansi)]
+		//public static extern int unzLocateFile(IntPtr handle, string entryName, int caseSensitivity);
 
         /// <summary>Get information about the current entry in the zip file.</summary>
         /// <param name="handle">The zip file handle opened by <see cref="unzOpenCurrentFile"/>.</param>
@@ -200,9 +210,9 @@ namespace ZLibNet
         ///   <para>Otherwise a value less than zero.  See <see cref="ErrorCode"/> for the specific reason.</para>
         /// </returns>
 		[DllImport(ZLibDll.Name)]//, ExactSpelling = true)]
-        public unsafe static extern int unzGetCurrentFileInfo(
+        public unsafe static extern int unzGetCurrentFileInfo64(
 			IntPtr handle, 
-			ZipEntryInfo* entryInfoPtr,
+			ZipEntryInfo64* entryInfoPtr,
             byte[] entryNameBuffer, 
 			uint entryNameBufferLength,
             byte[]  extraField,      
@@ -249,8 +259,8 @@ namespace ZLibNet
         /// <summary>Give the current position in uncompressed data of the zip file entry currently opened.</summary>
         /// <param name="handle">The zip file handle opened by <see cref="unzOpenCurrentFile"/>.</param>
         /// <returns>The number of bytes into the uncompressed data read so far.</returns>
-		[DllImport(ZLibDll.Name)]
-        public static extern long unztell(IntPtr handle);
+		//[DllImport(ZLibDll.Name)]
+		//public static extern long unztell(IntPtr handle);
 
         /// <summary>Determine if the end of the zip file entry has been reached.</summary>
         /// <param name="handle">The zip file handle opened by <see cref="unzOpenCurrentFile"/>.</param>
@@ -258,58 +268,15 @@ namespace ZLibNet
         ///   <para>One if the end of file was reached.</para>
         ///   <para>Zero if elsewhere.</para>
         /// </returns>
-		[DllImport(ZLibDll.Name)]
-        public static extern int unzeof(IntPtr handle);
+		//[DllImport(ZLibDll.Name)]
+		//public static extern int unzeof(IntPtr handle);
 
-		public static string GetErrorMessage(int errorCode)
-		{
-			switch (errorCode)
-			{
-				case ErrorCode.Ok:
-					return "No error";
-				case ErrorCode.Error:
-					return "Unknown error";
-				case ErrorCode.EndOfListOfFile:
-					return "Last entry in directory reached";
-				case ErrorCode.ParameterError:
-					return "Parameter error";
-				case ErrorCode.BadZipFile:
-					return "Zip file is invalid";
-				case ErrorCode.InternalError:
-					return "Internal program error";
-				case ErrorCode.CrcError:
-					return "Crc values do not match";
-				default:
-					return "Unknown error: " + errorCode;
-			}
-		}
     }
 
-    /// <summary>List of possible error codes.
-	/// 
-	/// </summary>
-    internal static class ErrorCode {
-        /// <summary>No error.</summary>
-        internal const int Ok = 0;
-
-        /// <summary>Unknown error.</summary>
-        internal const int Error = -1;
-
-        /// <summary>Last entry in directory reached.</summary>
-        internal const int EndOfListOfFile = -100;
-
-        /// <summary>Parameter error.</summary>
-        internal const int ParameterError = -102;
-
-        /// <summary>Zip file is invalid.</summary>
-        internal const int BadZipFile = -103;
-
-        /// <summary>Internal program error.</summary>
-        internal const int InternalError = -104;
-
-        /// <summary>Crc values do not match.</summary>
-		internal const int CrcError = -105;
-    }
+	internal static class ZipEntryFlag
+	{
+		internal const uint UTF8 = 0x800; //1 << 11
+	}
 
     /// <summary>Global information about the zip file.</summary>
     [StructLayout(LayoutKind.Sequential)]
@@ -352,10 +319,8 @@ namespace ZLibNet
 
         // implicit conversion from DateTime to ZipDateTimeInfo
         public static implicit operator ZipDateTimeInfo(DateTime date)  {
-//			double ms = date.Millisecond / 1000d;
-	//		date = date.AddSeconds(2);
             ZipDateTimeInfo d;
-            d.Seconds = (uint) date.Second;//+ Convert.ToInt32(ms));
+            d.Seconds = (uint) date.Second;
             d.Minutes = (uint) date.Minute;
             d.Hours = (uint) date.Hour;
             d.Day = (uint) date.Day;
@@ -379,54 +344,105 @@ namespace ZLibNet
     }
 
 
-    /// <summary>Information stored in zip file directory about an entry.</summary>
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct ZipEntryInfo {
-        // <summary>Version made by (2 bytes).</summary>
-        public UInt32 Version;                 
+	///// <summary>Information stored in zip file directory about an entry.</summary>
+	//[StructLayout(LayoutKind.Sequential)]
+	//internal struct ZipEntryInfo {
+	//    // <summary>Version made by (2 bytes).</summary>
+	//    public UInt32 Version;                 
 		
-        /// <summary>Version needed to extract (2 bytes).</summary>
-        public UInt32 VersionNeeded;           
+	//    /// <summary>Version needed to extract (2 bytes).</summary>
+	//    public UInt32 VersionNeeded;           
 		
-        /// <summary>General purpose bit flag (2 bytes).</summary>
-        public UInt32 Flag;                    
+	//    /// <summary>General purpose bit flag (2 bytes).</summary>
+	//    public UInt32 Flag;                    
 		
-        /// <summary>Compression method (2 bytes).</summary>
-        public UInt32 CompressionMethod;       
+	//    /// <summary>Compression method (2 bytes).</summary>
+	//    public UInt32 CompressionMethod;       
 		
-        /// <summary>Last mod file date in Dos fmt (4 bytes).</summary>
-        public UInt32 DosDate;                 
+	//    /// <summary>Last mod file date in Dos fmt (4 bytes).</summary>
+	//    public UInt32 DosDate;                 
 		
-        /// <summary>Crc-32 (4 bytes).</summary>
-        public UInt32 Crc;                     
+	//    /// <summary>Crc-32 (4 bytes).</summary>
+	//    public UInt32 Crc;                     
 		
-        /// <summary>Compressed size (4 bytes).</summary>
-        public UInt32 CompressedSize;          
+	//    /// <summary>Compressed size (4 bytes).</summary>
+	//    public UInt32 CompressedSize;          
 		
-        /// <summary>Uncompressed size (4 bytes).</summary>
-        public UInt32 UncompressedSize;        
+	//    /// <summary>Uncompressed size (4 bytes).</summary>
+	//    public UInt32 UncompressedSize;        
 		
-        /// <summary>Filename length (2 bytes).</summary>
-        public UInt32 FileNameLength;          
+	//    /// <summary>Filename length (2 bytes).</summary>
+	//    public UInt32 FileNameLength;          
 		
-        /// <summary>Extra field length (2 bytes).</summary>
-        public UInt32 ExtraFieldLength;        
+	//    /// <summary>Extra field length (2 bytes).</summary>
+	//    public UInt32 ExtraFieldLength;        
 		
-        /// <summary>File comment length (2 bytes).</summary>
-        public UInt32 CommentLength;           
+	//    /// <summary>File comment length (2 bytes).</summary>
+	//    public UInt32 CommentLength;           
+
+	//    /// <summary>Disk number start (2 bytes).</summary>
+	//    public UInt32 DiskStartNumber;         
+		
+	//    /// <summary>Internal file attributes (2 bytes).</summary>
+	//    public UInt32 InternalFileAttributes;  
+		
+	//    /// <summary>External file attributes (4 bytes).</summary>
+	//    public UInt32 ExternalFileAttributes;  
+
+	//    /// <summary>File modification date of entry.</summary>
+	//    public ZipDateTimeInfo ZipDateTime;
+	//}
+
+	/// <summary>Information stored in zip file directory about an entry.</summary>
+	[StructLayout(LayoutKind.Sequential)]
+	internal struct ZipEntryInfo64
+	{
+		// <summary>Version made by (2 bytes).</summary>
+		public UInt32 Version;
+
+		/// <summary>Version needed to extract (2 bytes).</summary>
+		public UInt32 VersionNeeded;
+
+		/// <summary>General purpose bit flag (2 bytes).</summary>
+		public UInt32 Flag;
+
+		/// <summary>Compression method (2 bytes).</summary>
+		public UInt32 CompressionMethod;
+
+		/// <summary>Last mod file date in Dos fmt (4 bytes).</summary>
+		public UInt32 DosDate;
+
+		/// <summary>Crc-32 (4 bytes).</summary>
+		public UInt32 Crc;
+
+		/// <summary>Compressed size (8 bytes).</summary>
+		public UInt64 CompressedSize;
+
+		/// <summary>Uncompressed size (8 bytes).</summary>
+		public UInt64 UncompressedSize;
+
+		/// <summary>Filename length (2 bytes).</summary>
+		public UInt32 FileNameLength;
+
+		/// <summary>Extra field length (2 bytes).</summary>
+		public UInt32 ExtraFieldLength;
+
+		/// <summary>File comment length (2 bytes).</summary>
+		public UInt32 CommentLength;
 
 		/// <summary>Disk number start (2 bytes).</summary>
-        public UInt32 DiskStartNumber;         
-		
-        /// <summary>Internal file attributes (2 bytes).</summary>
-        public UInt32 InternalFileAttributes;  
-		
-        /// <summary>External file attributes (4 bytes).</summary>
-        public UInt32 ExternalFileAttributes;  
+		public UInt32 DiskStartNumber;
 
-        /// <summary>File modification date of entry.</summary>
-        public ZipDateTimeInfo ZipDateTime;
-    }
+		/// <summary>Internal file attributes (2 bytes).</summary>
+		public UInt32 InternalFileAttributes;
+
+		/// <summary>External file attributes (4 bytes).</summary>
+		public UInt32 ExternalFileAttributes;
+
+		/// <summary>File modification date of entry.</summary>
+		public ZipDateTimeInfo ZipDateTime;
+	}
+
 
 	/// <summary>Specifies how the the zip entry should be compressed.</summary>
 	public enum CompressionMethod
@@ -447,21 +463,96 @@ namespace ZLibNet
 		Decompress,
 	}
 
-	public enum CompressionLevel
+	/// <summary>List of possible error codes.
+	/// 
+	/// </summary>
+	internal static class ZipReturnCode
 	{
-		NoCompression = 0,
-		BestSpeed = 1,
-		BestCompression = 9,
-		Default = 5,//-1,
-		Level0 = 0,
-		Level1 = 1,
-		Level2 = 2,
-		Level3 = 3,
-		Level4 = 4,
-		Level5 = 5,
-		Level6 = 6,
-		Level7 = 7,
-		Level8 = 8,
-		Level9 = 9
+		/// <summary>No error.</summary>
+		internal const int Ok = 0;
+
+		/// <summary>Unknown error.</summary>
+		internal const int Error = -1;
+
+		/// <summary>Last entry in directory reached.</summary>
+		internal const int EndOfListOfFile = -100;
+
+		/// <summary>Parameter error.</summary>
+		internal const int ParameterError = -102;
+
+		/// <summary>Zip file is invalid.</summary>
+		internal const int BadZipFile = -103;
+
+		/// <summary>Internal program error.</summary>
+		internal const int InternalError = -104;
+
+		/// <summary>Crc values do not match.</summary>
+		internal const int CrcError = -105;
+
+		public static string GetMessage(int retCode)
+		{
+			switch (retCode)
+			{
+				case ZipReturnCode.Ok:
+					return "No error";
+				case ZipReturnCode.Error:
+					return "Unknown error";
+				case ZipReturnCode.EndOfListOfFile:
+					return "Last entry in directory reached";
+				case ZipReturnCode.ParameterError:
+					return "Parameter error";
+				case ZipReturnCode.BadZipFile:
+					return "Zip file is invalid";
+				case ZipReturnCode.InternalError:
+					return "Internal program error";
+				case ZipReturnCode.CrcError:
+					return "Crc values do not match";
+				default:
+					return "Unknown error: " + retCode;
+			}
+		}
 	}
+
+
+	/// <summary>Thrown whenever an error occurs during the build.</summary>
+	[Serializable]
+	public class ZipException : ApplicationException
+	{
+
+		/// <summary>Constructs an exception with no descriptive information.</summary>
+		public ZipException()
+			: base()
+		{
+		}
+
+		/// <summary>Constructs an exception with a descriptive message.</summary>
+		/// <param name="message">The error message that explains the reason for the exception.</param>
+		public ZipException(String message)
+			: base(message)
+		{
+		}
+
+		public ZipException(String message, int errorCode)
+			: base(message + " (" + ZipReturnCode.GetMessage(errorCode) + ")")
+		{
+		}
+
+		/// <summary>Constructs an exception with a descriptive message and a reference to the instance of the <c>Exception</c> that is the root cause of the this exception.</summary>
+		/// <param name="message">The error message that explains the reason for the exception.</param>
+		/// <param name="innerException">An instance of <c>Exception</c> that is the cause of the current Exception. If <paramref name="innerException"/> is non-null, then the current Exception is raised in a catch block handling <paramref>innerException</paramref>.</param>
+		public ZipException(String message, Exception innerException)
+			: base(message, innerException)
+		{
+		}
+
+		/// <summary>Initializes a new instance of the BuildException class with serialized data.</summary>
+		/// <param name="info">The object that holds the serialized object data.</param>
+		/// <param name="context">The contextual information about the source or destination.</param>
+		public ZipException(SerializationInfo info, StreamingContext context)
+			: base(info, context)
+		{
+		}
+	}
+
+
 }

@@ -16,6 +16,16 @@ namespace ZLibNet
 		public bool Recurse; //def true??
 		public string ZipFile;
 		/// <summary>
+		/// More than 64k count zip entries in zip
+		/// More than 4GB data per zip entriy (does not work, but in minizip)
+		/// Zip's larger than 4GB is supporten in any case thou.
+		/// </summary>
+		public bool Zip64;
+		/// <summary>
+		/// Use UTF8 for zip entry name/comment
+		/// </summary>
+		public bool UTF8Encoding;
+		/// <summary>
 		/// List of files, dirs etc FULL PATH. With wildcards.
 		/// 
 		//                TRUE – only the beginning of the path specification of the item must match the path
@@ -27,18 +37,23 @@ namespace ZLibNet
 		//                For example, assume that the filespec is ABC\*.C and the ZIP file contains two
 		//items, ABC\TEXT.C and ABC\DEF\TEXT.C. If recurseFlag is FALSE, only
 		//ABC\TEXT.C is selected. If recurseFlag is TRUE, both files are selected
+		//
+		//
+		// PS: c:\some\dir or c:\some\dir\ will not include any files in dir (or if recursive, subdirs).
+		// This may not be logical, but DZ works this way as well.
 		/// </summary>
-		public List<string> ItemList = new List<string>();
+		public ZList<string> ItemList = new ZList<string>();
 		/// <summary>
 		/// Files to store
 		/// </summary>
-		public List<string> StoreSuffixes = new List<string>();
-		public bool NoDirectoryEntries;
-		public List<string> ExcludeFollowing = new List<string>();
-		public List<string> IncludeOnlyFollowing = new List<string>(); 
+		public ZList<string> StoreSuffixes = new ZList<string>();
+		//This functionality is more confusing than usefull -> made private
+		private bool NoDirectoryEntries = false;
+		public ZList<string> ExcludeFollowing = new ZList<string>();
+		public ZList<string> IncludeOnlyFollowing = new ZList<string>(); 
 //		public bool DontCheckNames;
-		public bool UseTempFile = true;
-		public enPathInZip PathInZip = enPathInZip.Relative; //good def?
+		public bool UseTempFile = true; //bad def?
+		public enPathInZip PathInZip = enPathInZip.Relative; //good def? yes
 		public string Comment;
 
 		// buffer to hold temp bytes
@@ -84,6 +99,7 @@ namespace ZLibNet
 			{
 				bool addedSomeEntry = false;
 
+				//hmmm...denne vil adde hvis fila eksisterer? Nei...vi bruker append = 0
 				using (ZipWriter writer = new ZipWriter(ZipFile))
 				{
 					writer.Comment = this.Comment;
@@ -101,17 +117,23 @@ namespace ZLibNet
 								ZipEntry entry = new ZipEntry(fsEntry.ZippedName, true);
 								entry.ModifiedTime = GetLastWriteTimeFixed(di);
 								entry.FileAttributes = di.Attributes;
+								entry.UTF8Encoding = this.UTF8Encoding;
+								entry.Zip64 = this.Zip64;
 								entry.Method = CompressionMethod.Stored; //DIR
-								entry.Comment = Comment;
+//								entry.Comment = Comment;
 								writer.AddEntry(entry);
 							}
 							else
 							{
 								FileInfo fi = (FileInfo)fsEntry.FileSystemInfo;
+								if (fi.Length > UInt32.MaxValue)
+									throw new NotSupportedException("Files above 4GB not supported (not even with Zip64: bug in zlib/minizip, will create corrupt zip)");
 								ZipEntry entry = new ZipEntry(fsEntry.ZippedName);
 								entry.ModifiedTime = GetLastWriteTimeFixed(fi);
 								entry.FileAttributes = fi.Attributes;
-								entry.Comment = Comment;
+								entry.UTF8Encoding = this.UTF8Encoding;
+								entry.Zip64 = this.Zip64;
+//								entry.Comment = Comment;
 								if (fi.Length == 0 || IsStoreFile(fsEntry.ZippedName))
 									entry.Method = CompressionMethod.Stored;
 								writer.AddEntry(entry);
@@ -216,9 +238,14 @@ namespace ZLibNet
 				AddFsEntry(htEntries, baseDi, di);
 			}
 
-			foreach (FileInfo fi in di.GetFiles(itemFileName))
+			// TODO: maybe treat no file name as *.*? (see ItemList comment)
+			// di.GetFiles("") does work (always returns 0 files). but this is more readable/logical:
+			if (itemFileName.Length > 0)
 			{
-				AddFsEntry(htEntries, baseDi, fi);
+				foreach (FileInfo fi in di.GetFiles(itemFileName))
+				{
+					AddFsEntry(htEntries, baseDi, fi);
+				}
 			}
 		}
 

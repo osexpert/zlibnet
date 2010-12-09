@@ -13,7 +13,7 @@ namespace ZLibNet
 		/// ABC\JOG.* ABC\RUN.PCX *.HLP "SPORTS FANS\BASKETBALL.TIF"
 		/// PS: stien kan ikke ha wildcards
 		/// </summary>
-		public List<string> ItemList = new List<string>();
+		public ZList<string> ItemList = new ZList<string>();
 		public bool Recurse; //how does it work? //good def?
 		/// <summary>
 		/// ONly valid for files. Dirs are always created and last writeTime is updated
@@ -22,10 +22,6 @@ namespace ZLibNet
 
 		public bool NoDirectoryNames;
 		public string Destination = null;
-		/// <summary>
-		/// set to true to be dzcompatible (sees like a bug)
-		/// </summary>
-//		public bool CreateEmptySubFoldersEvenIfNotRecursive;
 		byte[] buffer;
 
 		public void UnZip()
@@ -37,7 +33,7 @@ namespace ZLibNet
 			//if (Filespecs.Count == 0)
 			//    Filespecs.Add("*");
 
-			FileSpecMatcher fileSpecs = new FileSpecMatcher(ItemList, Recurse);//, CreateEmptySubFoldersEvenIfNotRecursive);
+			FileSpecMatcher fileSpecs = new FileSpecMatcher(ItemList, Recurse);
 
 			bool unzippedOne = false;
 
@@ -46,9 +42,9 @@ namespace ZLibNet
 				// buffer to hold temp bytes
 				buffer = new byte[4096];
 
-				foreach (String fileSpec in ItemList)
+				foreach (ZipEntry entry in reader)
 				{
-					foreach (ZipEntry entry in reader)
+					foreach (String fileSpec in ItemList)
 					{
 						if (fileSpecs.MatchSpecs(entry.Name, entry.IsDirectory))
 						{
@@ -56,6 +52,7 @@ namespace ZLibNet
 
 							if (entry.IsDirectory)
 							{
+								//FIXME: bør kanskje ha sjekk på om flere filer med samme navn havner på rota og overskriver hverandre?
 								if (!NoDirectoryNames)
 								{
 									string dirName = CreateUnzippedName(entry);
@@ -122,11 +119,11 @@ namespace ZLibNet
 				name = Path.GetFileName(entry.Name);
 			}
 			else
-				name = entry.Name.TrimStartDirSep(); //not requred since we dont use Path.Combine, but do it anyways
+				name = entry.Name.TrimStartDirSep(); //trim not requred since we dont use Path.Combine, but do it anyways
 
 			//PS: don't use Path.Combine here! if name is absolute, it will override destination!
 			//use Path.GetFullPath no normalize path. also it will give error if invalid chars in path
-			return Path.GetFullPath(Destination.SetEndDirSep() + name);
+			return Path.GetFullPath(Destination + Path.DirectorySeparatorChar + name);
 		}
 
 		
