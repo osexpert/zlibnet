@@ -6,54 +6,51 @@ using System.Runtime.Serialization;
 namespace ZLibNet
 {
 	/// <summary>Provides methods and properties used to compress and decompress streams.</summary>
-	unsafe public class ZLibStream : Stream
+	unsafe public class DeflateStream : Stream
 	{
 		//		private const int BufferSize = 16384;
 
 		long pBytesIn = 0;
 		long pBytesOut = 0;
 		bool pSuccess;
-//		uint pCrcValue = 0;
+		//		uint pCrcValue = 0;
 		const int WORK_DATA_SIZE = 0x1000;
 		byte[] pWorkData = new byte[WORK_DATA_SIZE];
 		int pWorkDataPos = 0;
 
 		private Stream pStream;
-		private CompressionMode pMode;
+		private CompressionMode pCompMode;
 		private z_stream pZstream = new z_stream();
 		bool pLeaveOpen;
 
-		public ZLibStream(Stream stream, CompressionMode mode)
+		public DeflateStream(Stream stream, CompressionMode mode)
 			: this(stream, mode, CompressionLevel.Default)
 		{
 		}
 
-		public ZLibStream(Stream stream, CompressionMode mode, bool leaveOpen):
+		public DeflateStream(Stream stream, CompressionMode mode, bool leaveOpen) :
 			this(stream, mode, CompressionLevel.Default, leaveOpen)
 		{
 		}
 
-		public ZLibStream(Stream stream, CompressionMode mode, CompressionLevel level) :
+		public DeflateStream(Stream stream, CompressionMode mode, CompressionLevel level) :
 			this(stream, mode, level, false)
 		{
 		}
 
-		/// <summary>Initializes a new instance of the GZipStream class using the specified stream and CompressionMode value.</summary>
-		/// <param name="stream">The stream to compress or decompress.</param>
-		/// <param name="mode">One of the CompressionMode values that indicates the action to take.</param>
-		public ZLibStream(Stream stream, CompressionMode mode, CompressionLevel level, bool leaveOpen)
+		public DeflateStream(Stream stream, CompressionMode compMode, CompressionLevel level, bool leaveOpen)
 		{
 			this.pLeaveOpen = leaveOpen;
 			this.pStream = stream;
-			this.pMode = mode;
+			this.pCompMode = compMode;
 
 			int ret;
 			fixed (z_stream* z = &this.pZstream)
 			{
-				if (this.pMode == CompressionMode.Compress)
-					ret = ZLib.deflateInit(z, (int)level, ZLib.ZLibVersion, Marshal.SizeOf(typeof(z_stream)));
+				if (this.pCompMode == CompressionMode.Compress)
+					ret = ZLib.deflateInit(z, level, this.WriteType);
 				else
-					ret = ZLib.inflateInit(z, ZLibOpenType.Both, ZLib.ZLibVersion, Marshal.SizeOf(typeof(z_stream)));
+					ret = ZLib.inflateInit(z, this.OpenType);
 			}
 
 			if (ret != ZLibReturnCode.Ok)
@@ -63,11 +60,10 @@ namespace ZLibNet
 		}
 
 		/// <summary>GZipStream destructor. Cleans all allocated resources.</summary>
-		~ZLibStream()
+		~DeflateStream()
 		{
 			this.Dispose(false);
 		}
-
 
 		/// <summary>
 		/// Stream.Close() ->   this.Dispose(true); + GC.SuppressFinalize(this);
@@ -85,10 +81,10 @@ namespace ZLibNet
 						if (this.pStream != null)
 						{
 							//managed stuff
-							if (this.pMode == CompressionMode.Compress && pSuccess)
+							if (this.pCompMode == CompressionMode.Compress && pSuccess)
 							{
 								Flush();
-//								this.pStream.Flush();
+								//								this.pStream.Flush();
 							}
 							if (!pLeaveOpen)
 								this.pStream.Close();
@@ -114,20 +110,20 @@ namespace ZLibNet
 		{
 			fixed (z_stream* zstreamPtr = &pZstream)
 			{
-				if (this.pMode == CompressionMode.Compress)
+				if (this.pCompMode == CompressionMode.Compress)
 					ZLib.deflateEnd(zstreamPtr);
 				else
 					ZLib.inflateEnd(zstreamPtr);
 			}
 		}
 
-		private bool IsReading()
+		protected virtual ZLibOpenType OpenType
 		{
-			return this.pMode == CompressionMode.Decompress;
+			get { return ZLibOpenType.Deflate; }
 		}
-		private bool IsWriting()
+		protected virtual ZLibWriteType WriteType
 		{
-			return this.pMode == CompressionMode.Compress;
+			get { return ZLibWriteType.Deflate; }
 		}
 
 		/// <summary>Reads a number of decompressed bytes into the specified byte array.</summary>
@@ -137,7 +133,7 @@ namespace ZLibNet
 		/// <returns>The number of bytes that were decompressed into the byte array. If the end of the stream has been reached, zero or the number of bytes read is returned.</returns>
 		public override int Read(byte[] buffer, int offset, int count)
 		{
-			if (pMode == CompressionMode.Compress)
+			if (pCompMode == CompressionMode.Compress)
 				throw new NotSupportedException("Can't read on a compress stream!");
 
 			int readLen = 0;
@@ -181,7 +177,7 @@ namespace ZLibNet
 						}
 					}
 
-//					pCrcValue = crc32(pCrcValue, &bufferPtr[offset], (uint)readLen);
+					//					pCrcValue = crc32(pCrcValue, &bufferPtr[offset], (uint)readLen);
 					pBytesOut += readLen;
 				}
 
@@ -196,7 +192,7 @@ namespace ZLibNet
 		/// <param name="count">The number of bytes compressed.</param>
 		public override void Write(byte[] buffer, int offset, int count)
 		{
-			if (pMode == CompressionMode.Decompress)
+			if (pCompMode == CompressionMode.Decompress)
 				throw new NotSupportedException("Can't write on a decompression stream!");
 
 			pBytesIn += count;
@@ -244,7 +240,7 @@ namespace ZLibNet
 		/// <summary>Flushes the contents of the internal buffer of the current GZipStream object to the underlying stream.</summary>
 		public override void Flush()
 		{
-			if (pMode == CompressionMode.Decompress)
+			if (pCompMode == CompressionMode.Decompress)
 				throw new NotSupportedException("Can't flush a decompression stream.");
 
 			fixed (byte* workDataPtr = pWorkData)
@@ -295,13 +291,22 @@ namespace ZLibNet
 		//    }
 		//}
 
+		public long TotalIn
+		{
+			get { return this.pBytesIn; }
+		}
+
+		public long TotalOut
+		{
+			get { return this.pBytesOut; }
+		}
 
 		// The compression ratio obtained (same for compression/decompression).
 		public double CompressionRatio
 		{
 			get
 			{
-				if (pMode == CompressionMode.Compress)
+				if (pCompMode == CompressionMode.Compress)
 					return ((pBytesIn == 0) ? 0.0 : (100.0 - ((double)pBytesOut * 100.0 / (double)pBytesIn)));
 				else
 					return ((pBytesOut == 0) ? 0.0 : (100.0 - ((double)pBytesIn * 100.0 / (double)pBytesOut)));
@@ -311,9 +316,9 @@ namespace ZLibNet
 		/// <summary>Gets a value indicating whether the stream supports reading while decompressing a file.</summary>
 		public override bool CanRead
 		{
-			get 
-			{ 
-				return pMode == CompressionMode.Decompress && pStream.CanRead;
+			get
+			{
+				return pCompMode == CompressionMode.Decompress && pStream.CanRead;
 			}
 		}
 
@@ -322,7 +327,7 @@ namespace ZLibNet
 		{
 			get
 			{
-				return pMode == CompressionMode.Compress && pStream.CanWrite;
+				return pCompMode == CompressionMode.Compress && pStream.CanWrite;
 			}
 		}
 
@@ -376,4 +381,72 @@ namespace ZLibNet
 			}
 		}
 	}
+
+	/// <summary>
+	/// hdr(?) + adler32 et end.
+	/// wraps a deflate stream
+	/// </summary>
+	public class ZLibStream : DeflateStream
+	{
+		public ZLibStream(Stream stream, CompressionMode mode)
+			: base(stream, mode)
+		{
+		}
+		public ZLibStream(Stream stream, CompressionMode mode, bool leaveOpen) :
+			base(stream, mode, leaveOpen)
+		{
+		}
+		public ZLibStream(Stream stream, CompressionMode mode, CompressionLevel level) :
+			base(stream, mode, level)
+		{
+		}
+		public ZLibStream(Stream stream, CompressionMode mode, CompressionLevel level, bool leaveOpen) :
+			base(stream, mode, level, leaveOpen)
+		{
+		}
+
+		protected override ZLibOpenType OpenType
+		{
+			get { return ZLibOpenType.ZLib; }
+		}
+		protected override ZLibWriteType WriteType
+		{
+			get { return ZLibWriteType.ZLib; }
+		}
+	}
+
+	/// <summary>
+	/// Saved to file (.gz) can be opened with zip utils.
+	/// Have hdr + crc32 at end.
+	/// Wraps a deflate stream
+	/// </summary>
+	public class GZipStream : DeflateStream
+	{
+		public GZipStream(Stream stream, CompressionMode mode)
+			: base(stream, mode)
+		{
+		}
+		public GZipStream(Stream stream, CompressionMode mode, bool leaveOpen) :
+			base(stream, mode, leaveOpen)
+		{
+		}
+		public GZipStream(Stream stream, CompressionMode mode, CompressionLevel level) :
+			base(stream, mode, level)
+		{
+		}
+		public GZipStream(Stream stream, CompressionMode mode, CompressionLevel level, bool leaveOpen) :
+			base(stream, mode, level, leaveOpen)
+		{
+		}
+
+		protected override ZLibOpenType OpenType
+		{
+			get{ return ZLibOpenType.GZip; }
+		}
+		protected override ZLibWriteType WriteType
+		{
+			get { return ZLibWriteType.GZip; }
+		}
+	}
+
 }
