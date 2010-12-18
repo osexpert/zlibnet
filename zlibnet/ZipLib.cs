@@ -21,12 +21,6 @@ namespace ZLibNet
     /// </remarks>
     internal static class ZipLib 
 	{
-
-		const int MAX_WBITS  = 15; /* 32K LZ77 window */
-		const int	DEF_MEM_LEVEL = 8;
-		const int Z_DEFAULT_STRATEGY =   0;
-		const uint VERSIONMADEBY = 0;
-
 	       /*
             Create a zipfile.
             pathname contain on Windows NT a filename like "c:\\zlib\\zlib111.zip" or on an Unix computer "zlib/zlib111.zip".
@@ -100,9 +94,9 @@ namespace ZLibNet
 		{
 			//TODO: bruk denne metoden + den gammle og kjør fc /b på dem. De skal være like hvis vi bruker riktige def params!
 			return zipOpenNewFileInZip4_64(handle, entryName, entryInfoPtr, extraField, extraFieldLength,
-				extraFieldGlobal, extraFieldGlobalLength, comment, method, level, 0, -MAX_WBITS, 
-				DEF_MEM_LEVEL, Z_DEFAULT_STRATEGY,
-				null, 0, VERSIONMADEBY, flagBase, zip64 ? 1 : 0);
+				extraFieldGlobal, extraFieldGlobalLength, comment, method, level, 0, -ZLib.MAX_WBITS,
+				ZLib.DEF_MEM_LEVEL, ZLib.Z_DEFAULT_STRATEGY,
+				null, 0, ZLib.VERSIONMADEBY, flagBase, zip64 ? 1 : 0);
 		}
 
 	

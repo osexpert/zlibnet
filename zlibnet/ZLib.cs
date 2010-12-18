@@ -9,26 +9,56 @@ namespace ZLibNet
 	unsafe internal static class ZLib
 	{
 		internal const string ZLibVersion = "1.2.5";
+		internal const int MAX_WBITS = 15; /* 32K LZ77 window */
+		internal const int DEF_MEM_LEVEL = 8;
+		internal const int Z_DEFAULT_STRATEGY = 0;
+		internal const uint VERSIONMADEBY = 0;
 
-		[DllImport(ZLibDll.Name, EntryPoint = "inflateInit2_", CharSet = CharSet.Ansi)]
-		internal static extern int inflateInit(z_stream* strm, ZLibOpenType windowBits, string version, int stream_size);
+		const int Z_DEFLATED = 8;
+		/* The deflate compression method (the only one supported in this version) */
 
-		[DllImport(ZLibDll.Name, EntryPoint = "deflateInit_", CharSet = CharSet.Ansi)]
-		internal static extern int deflateInit(z_stream* strm, int level, string version, int stream_size);
+		[DllImport(ZLibDll.Name, ExactSpelling = true, CharSet = CharSet.Ansi)]
+		static extern int inflateInit2_(z_stream* strm, int windowBits, string version, int stream_size);
 
-		[DllImport(ZLibDll.Name, CharSet = CharSet.Ansi)]
+		internal static int inflateInit(z_stream* strm, ZLibOpenType windowBits)
+		{
+			return inflateInit2_(strm, (int)windowBits, ZLib.ZLibVersion, Marshal.SizeOf(typeof(z_stream)));
+		}
+
+		//		[DllImport(ZLibDll.Name, EntryPoint = "deflateInit_", CharSet = CharSet.Ansi)]
+		//		internal static extern int deflateInit(z_stream* strm, int level, string version, int stream_size);
+
+		[DllImport(ZLibDll.Name, ExactSpelling = true, CharSet = CharSet.Ansi)]
+		static extern int deflateInit2_(z_stream* strm, int level, int method, int windowBits,
+			int memLevel, int strategy,
+			 string version, int stream_size);
+
+		internal static int deflateInit(z_stream* strm, CompressionLevel level, ZLibWriteType windowBits)
+		{
+			return deflateInit2_(strm, (int)level, Z_DEFLATED, (int)windowBits, DEF_MEM_LEVEL,
+						 Z_DEFAULT_STRATEGY, ZLibVersion, Marshal.SizeOf(typeof(z_stream)));
+		}
+
+		//ZEXTERN int ZEXPORT deflateInit2 OF((z_streamp strm,
+		//                             int  level,
+		//                             int  method,
+		//                             int  windowBits,
+		//                             int  memLevel,
+		//                             int  strategy));
+
+		[DllImport(ZLibDll.Name)]//, CharSet = CharSet.Ansi)]//
 		internal static extern int inflate(z_stream* strm, ZLibFlush flush);
 
-		[DllImport(ZLibDll.Name, CharSet = CharSet.Ansi)]
+		[DllImport(ZLibDll.Name)]//, CharSet = CharSet.Ansi)]
 		internal static extern int deflate(z_stream* strm, ZLibFlush flush);
 
-		[DllImport(ZLibDll.Name, CharSet = CharSet.Ansi)]
+		[DllImport(ZLibDll.Name)]//, CharSet = CharSet.Ansi)]
 		internal static extern int inflateEnd(z_stream* strm);
 
-		[DllImport(ZLibDll.Name, CharSet = CharSet.Ansi)]
+		[DllImport(ZLibDll.Name)]//, CharSet = CharSet.Ansi)]
 		internal static extern int deflateEnd(z_stream* strm);
 
-		[DllImport(ZLibDll.Name, CharSet = CharSet.Ansi)]
+		[DllImport(ZLibDll.Name)]//, CharSet = CharSet.Ansi)]
 		internal static extern uint crc32(uint crc, byte* buf, uint len);
 	}
 
@@ -48,10 +78,10 @@ namespace ZLibNet
 		DefaultStrategy = 0
 	}
 
-	enum ZLibCompressionMethod
-	{
-		Delated = 8
-	}
+	//enum ZLibCompressionMethod
+	//{
+	//    Delated = 8
+	//}
 
 	enum ZLibDataType
 	{
@@ -60,11 +90,26 @@ namespace ZLibNet
 		Unknown = 2,
 	}
 
-	enum ZLibOpenType
+	public enum ZLibOpenType
 	{
-		ZLib = 15,
+		//If a compressed stream with a larger window
+		//size is given as input, inflate() will return with the error code
+		//Z_DATA_ERROR instead of trying to allocate a larger window.
+		Deflate = -15, // -8..-15
+		ZLib = 15, // 8..15, 0 = use the window size in the zlib header of the compressed stream.
 		GZip = 15 + 16,
-		Both = 15 + 32,
+		Both_ZLib_GZip = 15 + 32,
+	}
+
+	public enum ZLibWriteType
+	{
+		//If a compressed stream with a larger window
+		//size is given as input, inflate() will return with the error code
+		//Z_DATA_ERROR instead of trying to allocate a larger window.
+		Deflate = -15, // -8..-15
+		ZLib = 15, // 8..15, 0 = use the window size in the zlib header of the compressed stream.
+		GZip = 15 + 16,
+		//		Both = 15 + 32,
 	}
 
 	public enum CompressionLevel
