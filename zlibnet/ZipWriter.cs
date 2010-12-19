@@ -90,12 +90,21 @@ namespace ZLibNet {
                     extraLength = (uint) entry.ExtraField.Length;
                 }
 
+				string nameForZip = entry.GetNameForZip();
+
 				uint flagBase = 0;
 				if (entry.UTF8Encoding)
 					flagBase |= (flagBase & ZipEntryFlag.UTF8);
+				else
+				{
+					if (!nameForZip.IsAscii())
+						throw new ArgumentException("Name can only contain Ascii 8 bit characters.");
+					if (entry.Comment != null && !entry.Comment.IsAscii())
+						throw new ArgumentException("Comment can only contain Ascii 8 bit characters.");
+				}
 
 				Encoding encoding = entry.UTF8Encoding ? Encoding.UTF8 : ZipLib.OEMEncoding;
-				byte[] name = encoding.GetBytes(entry.GetNameForZip());
+				byte[] name = encoding.GetBytes(nameForZip);
 				byte[] comment = null;
 				if (entry.Comment != null)
 					comment = encoding.GetBytes(entry.Comment);
@@ -121,7 +130,6 @@ namespace ZLibNet {
 			//TODO: set the ZipEntry ref instead? Easier debug etc.
             _entryOpen = true;
         }
-
 
 
 		/// <summary>Gets and sets the default compresion level for zip file entries.  See <see cref="CompressionMethod"/> for a partial list of values.</summary>

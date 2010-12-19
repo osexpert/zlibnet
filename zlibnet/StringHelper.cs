@@ -47,6 +47,19 @@ namespace ZLibNet
 				return str.WildcardMatch(wildcompare);
 		}
 
+		/// <summary>Check if <paramref name="str"/> only contains Ascii 8 bit characters.</summary>
+		public static bool IsAscii(this string str)
+		{
+			foreach (char ch in str)
+			{
+				if (ch > 0xff)
+				{
+					return false;
+				}
+			}
+			return true;
+		}
+
 		public static bool WildcardMatch(this string str, string wildcompare)
 		{
 			if (string.IsNullOrEmpty(wildcompare))
