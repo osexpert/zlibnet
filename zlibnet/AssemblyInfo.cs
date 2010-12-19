@@ -14,21 +14,8 @@ using System.Runtime.CompilerServices;
 
 public static class ZLibDll
 {
-	/// <summary>
-	/// 32bit zlib dll in same folder as application
-	/// </summary>
-	internal const string Name = "zlib32.dll";
-	/// <summary>
-	/// 64bit zlib dll in same folder as application
-	/// </summary>
-//	internal const string Name = "zlib64.dll";
-	/// <summary>
-	/// 32bit and 64bit zlib dll's renamed to same name zlib.dll and:
-	/// -32bit version is placed in C:\WINDOWS\SysWOW64
-	/// -64bit version is placed in C:\WINDOWS\system32
-	/// The correct dll will be used automatically.
-	/// </summary>
-//	internal const string Name = "zlib.dll";
+	internal const string Name32 = "zlib32.dll";
+	internal const string Name64 = "zlib64.dll";
 }
 
 // This will not compile with Visual Studio.  If you want to build a signed

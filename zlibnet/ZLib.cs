@@ -17,49 +17,102 @@ namespace ZLibNet
 		const int Z_DEFLATED = 8;
 		/* The deflate compression method (the only one supported in this version) */
 
-		[DllImport(ZLibDll.Name, ExactSpelling = true, CharSet = CharSet.Ansi)]
-		static extern int inflateInit2_(z_stream* strm, int windowBits, string version, int stream_size);
+		static bool Is64 = (IntPtr.Size == 8);
+
+		[DllImport(ZLibDll.Name32, EntryPoint = "inflateInit2_", ExactSpelling = true, CharSet = CharSet.Ansi)]
+		static extern int inflateInit2_32(z_stream* strm, int windowBits, string version, int stream_size);
+		[DllImport(ZLibDll.Name64, EntryPoint = "inflateInit2_", ExactSpelling = true, CharSet = CharSet.Ansi)]
+		static extern int inflateInit2_64(z_stream* strm, int windowBits, string version, int stream_size);
 
 		internal static int inflateInit(z_stream* strm, ZLibOpenType windowBits)
 		{
-			return inflateInit2_(strm, (int)windowBits, ZLib.ZLibVersion, Marshal.SizeOf(typeof(z_stream)));
+			if (Is64)
+				return inflateInit2_64(strm, (int)windowBits, ZLib.ZLibVersion, Marshal.SizeOf(typeof(z_stream)));
+			else
+				return inflateInit2_32(strm, (int)windowBits, ZLib.ZLibVersion, Marshal.SizeOf(typeof(z_stream)));
 		}
 
-		//		[DllImport(ZLibDll.Name, EntryPoint = "deflateInit_", CharSet = CharSet.Ansi)]
-		//		internal static extern int deflateInit(z_stream* strm, int level, string version, int stream_size);
-
-		[DllImport(ZLibDll.Name, ExactSpelling = true, CharSet = CharSet.Ansi)]
-		static extern int deflateInit2_(z_stream* strm, int level, int method, int windowBits,
-			int memLevel, int strategy,
-			 string version, int stream_size);
+		[DllImport(ZLibDll.Name32, EntryPoint = "deflateInit2_", ExactSpelling = true, CharSet = CharSet.Ansi)]
+		static extern int deflateInit2_32(z_stream* strm, int level, int method, int windowBits,
+			int memLevel, int strategy, string version, int stream_size);
+		[DllImport(ZLibDll.Name64, EntryPoint = "deflateInit2_", ExactSpelling = true, CharSet = CharSet.Ansi)]
+		static extern int deflateInit2_64(z_stream* strm, int level, int method, int windowBits,
+			int memLevel, int strategy, string version, int stream_size);
 
 		internal static int deflateInit(z_stream* strm, CompressionLevel level, ZLibWriteType windowBits)
 		{
-			return deflateInit2_(strm, (int)level, Z_DEFLATED, (int)windowBits, DEF_MEM_LEVEL,
-						 Z_DEFAULT_STRATEGY, ZLibVersion, Marshal.SizeOf(typeof(z_stream)));
+			if (Is64)
+				return deflateInit2_64(strm, (int)level, Z_DEFLATED, (int)windowBits, DEF_MEM_LEVEL,
+					Z_DEFAULT_STRATEGY, ZLibVersion, Marshal.SizeOf(typeof(z_stream)));
+			else
+				return deflateInit2_32(strm, (int)level, Z_DEFLATED, (int)windowBits, DEF_MEM_LEVEL,
+					Z_DEFAULT_STRATEGY, ZLibVersion, Marshal.SizeOf(typeof(z_stream)));
 		}
 
-		//ZEXTERN int ZEXPORT deflateInit2 OF((z_streamp strm,
-		//                             int  level,
-		//                             int  method,
-		//                             int  windowBits,
-		//                             int  memLevel,
-		//                             int  strategy));
+		[DllImport(ZLibDll.Name32, EntryPoint = "inflate", ExactSpelling = true)]
+		static extern int inflate_32(z_stream* strm, ZLibFlush flush);
+		[DllImport(ZLibDll.Name64, EntryPoint = "inflate", ExactSpelling = true)]
+		static extern int inflate_64(z_stream* strm, ZLibFlush flush);
 
-		[DllImport(ZLibDll.Name)]//, CharSet = CharSet.Ansi)]//
-		internal static extern int inflate(z_stream* strm, ZLibFlush flush);
+		internal static int inflate(z_stream* strm, ZLibFlush flush)
+		{
+			if (Is64)
+				return inflate_64(strm, flush);
+			else
+				return inflate_32(strm, flush);
+		}
 
-		[DllImport(ZLibDll.Name)]//, CharSet = CharSet.Ansi)]
-		internal static extern int deflate(z_stream* strm, ZLibFlush flush);
+		[DllImport(ZLibDll.Name32, EntryPoint = "deflate", ExactSpelling = true)]
+		static extern int deflate_32(z_stream* strm, ZLibFlush flush);
+		[DllImport(ZLibDll.Name64, EntryPoint = "deflate", ExactSpelling = true)]
+		static extern int deflate_64(z_stream* strm, ZLibFlush flush);
 
-		[DllImport(ZLibDll.Name)]//, CharSet = CharSet.Ansi)]
-		internal static extern int inflateEnd(z_stream* strm);
+		internal static int deflate(z_stream* strm, ZLibFlush flush)
+		{
+			if (Is64)
+				return deflate_64(strm, flush);
+			else
+				return deflate_32(strm, flush);
+		}
 
-		[DllImport(ZLibDll.Name)]//, CharSet = CharSet.Ansi)]
-		internal static extern int deflateEnd(z_stream* strm);
+		[DllImport(ZLibDll.Name32, EntryPoint = "inflateEnd", ExactSpelling = true)]
+		static extern int inflateEnd_32(z_stream* strm);
+		[DllImport(ZLibDll.Name64, EntryPoint = "inflateEnd", ExactSpelling = true)]
+		static extern int inflateEnd_64(z_stream* strm);
 
-		[DllImport(ZLibDll.Name)]//, CharSet = CharSet.Ansi)]
-		internal static extern uint crc32(uint crc, byte* buf, uint len);
+		internal static int inflateEnd(z_stream* strm)
+		{
+			if (Is64)
+				return inflateEnd_64(strm);
+			else
+				return inflateEnd_32(strm);
+		}
+
+		[DllImport(ZLibDll.Name32, EntryPoint = "deflateEnd", ExactSpelling = true)]
+		static extern int deflateEnd_32(z_stream* strm);
+		[DllImport(ZLibDll.Name64, EntryPoint = "deflateEnd", ExactSpelling = true)]
+		static extern int deflateEnd_64(z_stream* strm);
+
+		internal static int deflateEnd(z_stream* strm)
+		{
+			if (Is64)
+				return deflateEnd_64(strm);
+			else
+				return deflateEnd_32(strm);
+		}
+
+		[DllImport(ZLibDll.Name32, EntryPoint = "crc32", ExactSpelling = true)]
+		static extern uint crc32_32(uint crc, byte* buf, uint len);
+		[DllImport(ZLibDll.Name64, EntryPoint = "crc32", ExactSpelling = true)]
+		static extern uint crc32_64(uint crc, byte* buf, uint len);
+
+		internal static uint crc32(uint crc, byte* buf, uint len)
+		{
+			if (Is64)
+				return crc32_64(crc, buf, len);
+			else
+				return crc32_32(crc, buf, len);
+		}
 	}
 
 	enum ZLibFlush
