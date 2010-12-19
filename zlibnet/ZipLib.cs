@@ -21,6 +21,8 @@ namespace ZLibNet
     /// </remarks>
     internal static class ZipLib 
 	{
+		static bool Is64 = (IntPtr.Size == 8);
+
 	       /*
             Create a zipfile.
             pathname contain on Windows NT a filename like "c:\\zlib\\zlib111.zip" or on an Unix computer "zlib/zlib111.zip".
@@ -29,9 +31,18 @@ namespace ZLibNet
             Else, the return value is a zipFile Handle, usable with other function of this zip package.
         */
         /// <summary>Create a zip file.</summary>
-		[DllImport(ZLibDll.Name, ExactSpelling = true, CharSet = CharSet.Ansi)]
-        public static extern IntPtr zipOpen(string fileName, int append);
+		[DllImport(ZLibDll.Name32, EntryPoint = "zipOpen", ExactSpelling = true, CharSet = CharSet.Ansi)]
+        static extern IntPtr zipOpen_32(string fileName, int append);
+		[DllImport(ZLibDll.Name64, EntryPoint = "zipOpen", ExactSpelling = true, CharSet = CharSet.Ansi)]
+		static extern IntPtr zipOpen_64(string fileName, int append);
 
+		internal static IntPtr zipOpen(string fileName, int append)
+		{
+			if (Is64)
+				return zipOpen_64(fileName, append);
+			else
+				return zipOpen_32(fileName, append);
+		}
         /*
             Open a file in the ZIP for writing.
             filename : the filename in zip (if NULL, '-' without quote will be used
@@ -42,21 +53,28 @@ namespace ZLibNet
             method contain the compression method (0 for store, Z_DEFLATED for deflate)
             level contain the level of compression (can be Z_DEFAULT_COMPRESSION)
         */
-        /// <summary>Open a new zip entry for writing.</summary>
-		//[DllImport(ZLibDll.Name)]//, ExactSpelling = true)]//, CharSet = CharSet.Ansi)]
-		//unsafe public static extern int zipOpenNewFileInZip(IntPtr handle,
-		//    byte[] entryName,
-		//    ZipFileEntryInfo* entryInfoPtr,
-		//    byte[] extraField,
-		//    uint extraFieldLength,
-		//    byte[] extraFieldGlobal,
-		//    uint extraFieldGlobalLength,
-		//    byte[] comment,
-		//    int method,
-		//    int level);
-
-		[DllImport(ZLibDll.Name)]//, ExactSpelling = true)]//, CharSet = CharSet.Ansi)]
-		unsafe static extern int zipOpenNewFileInZip4_64(IntPtr handle,
+		[DllImport(ZLibDll.Name32, EntryPoint = "zipOpenNewFileInZip4_64", ExactSpelling = true)]
+		unsafe static extern int zipOpenNewFileInZip4_64_32(IntPtr handle,
+			byte[] entryName,
+			ZipFileEntryInfo* entryInfoPtr,
+			byte[] extraField,
+			uint extraFieldLength,
+			byte[] extraFieldGlobal,
+			uint extraFieldGlobalLength,
+			byte[] comment,
+			int method,
+			int level,
+			int raw,
+			int windowBits,
+			int memLevel,
+			int strategy,
+			byte[] password,
+			uint crcForCrypting,
+			uint versionMadeBy,
+			uint flagBase,
+			int zip64);
+		[DllImport(ZLibDll.Name64, EntryPoint = "zipOpenNewFileInZip4_64", ExactSpelling = true)]
+		unsafe static extern int zipOpenNewFileInZip4_64_64(IntPtr handle,
 			byte[] entryName,
 			ZipFileEntryInfo* entryInfoPtr,
 			byte[] extraField,
@@ -77,7 +95,6 @@ namespace ZLibNet
 			int zip64);
 
 
-
 		public static unsafe int zipOpenNewFileInZip4_64(IntPtr handle,
             byte[] entryName,
             ZipFileEntryInfo* entryInfoPtr,
@@ -92,28 +109,62 @@ namespace ZLibNet
 			bool zip64
 			)
 		{
-			//TODO: bruk denne metoden + den gammle og kjør fc /b på dem. De skal være like hvis vi bruker riktige def params!
-			return zipOpenNewFileInZip4_64(handle, entryName, entryInfoPtr, extraField, extraFieldLength,
-				extraFieldGlobal, extraFieldGlobalLength, comment, method, level, 0, -ZLib.MAX_WBITS,
-				ZLib.DEF_MEM_LEVEL, ZLib.Z_DEFAULT_STRATEGY,
-				null, 0, ZLib.VERSIONMADEBY, flagBase, zip64 ? 1 : 0);
+			if (Is64)
+				return zipOpenNewFileInZip4_64_64(handle, entryName, entryInfoPtr, extraField, extraFieldLength,
+					extraFieldGlobal, extraFieldGlobalLength, comment, method, level, 0, -ZLib.MAX_WBITS,
+					ZLib.DEF_MEM_LEVEL, ZLib.Z_DEFAULT_STRATEGY,
+					null, 0, ZLib.VERSIONMADEBY, flagBase, zip64 ? 1 : 0);
+			else
+				return zipOpenNewFileInZip4_64_32(handle, entryName, entryInfoPtr, extraField, extraFieldLength,
+					extraFieldGlobal, extraFieldGlobalLength, comment, method, level, 0, -ZLib.MAX_WBITS,
+					ZLib.DEF_MEM_LEVEL, ZLib.Z_DEFAULT_STRATEGY,
+					null, 0, ZLib.VERSIONMADEBY, flagBase, zip64 ? 1 : 0);
 		}
 
 	
 
         /// <summary>Write data to the zip file.</summary>
-		[DllImport(ZLibDll.Name)]
-        public static extern int zipWriteInFileInZip(IntPtr handle, byte[] buffer, uint count);
+		[DllImport(ZLibDll.Name32, EntryPoint = "zipWriteInFileInZip", ExactSpelling = true)]
+        static extern int zipWriteInFileInZip_32(IntPtr handle, byte[] buffer, uint count);
+		[DllImport(ZLibDll.Name64, EntryPoint = "zipWriteInFileInZip", ExactSpelling = true)]
+		static extern int zipWriteInFileInZip_64(IntPtr handle, byte[] buffer, uint count);
+
+		internal static int zipWriteInFileInZip(IntPtr handle, byte[] buffer, uint count)
+		{
+			if (Is64)
+				return zipWriteInFileInZip_64(handle, buffer, count);
+			else
+				return zipWriteInFileInZip_32(handle, buffer, count);
+		}
 
         /// <summary>Close the current entry in the zip file.</summary>
-		[DllImport(ZLibDll.Name)]
-        public static extern int zipCloseFileInZip(IntPtr handle);
+		[DllImport(ZLibDll.Name32, EntryPoint = "zipCloseFileInZip", ExactSpelling = true)]
+        static extern int zipCloseFileInZip_32(IntPtr handle);
+		[DllImport(ZLibDll.Name64, EntryPoint = "zipCloseFileInZip", ExactSpelling = true)]
+		static extern int zipCloseFileInZip_64(IntPtr handle);
+
+		internal static int zipCloseFileInZip(IntPtr handle)
+		{
+			if (Is64)
+				return zipCloseFileInZip_64(handle);
+			else
+				return zipCloseFileInZip_32(handle);
+		}
 
         /// <summary>Close the zip file.</summary>
 		/// //file comment is for some weird reason ANSI, while entry name + comment is OEM...
-		[DllImport(ZLibDll.Name, ExactSpelling = true, CharSet = CharSet.Ansi)]
-        public static extern int zipClose(IntPtr handle, string comment);
+		[DllImport(ZLibDll.Name32, EntryPoint = "zipClose", ExactSpelling = true, CharSet = CharSet.Ansi)]
+        static extern int zipClose_32(IntPtr handle, string comment);
+		[DllImport(ZLibDll.Name64, EntryPoint = "zipClose", ExactSpelling = true, CharSet = CharSet.Ansi)]
+		static extern int zipClose_64(IntPtr handle, string comment);
 
+		internal static int zipClose(IntPtr handle, string comment)
+		{
+			if (Is64)
+				return zipClose_64(handle, comment);
+			else
+				return zipClose_32(handle, comment);
+		}
 
         /// <summary>Opens a zip file for reading.</summary>
         /// <param name="fileName">The name of the zip to open.  At this time only file names with ANSI (8 bit) characters are supported.</param>
@@ -121,8 +172,18 @@ namespace ZLibNet
         ///   <para>A handle usable with other functions of the ZipLib class.</para>
         ///   <para>Otherwise IntPtr.Zero if the zip file could not e opened (file doen not exist or is not valid).</para>
         /// </returns>
-		[DllImport(ZLibDll.Name, ExactSpelling = true, CharSet = CharSet.Ansi)]
-        public static extern IntPtr unzOpen(string fileName);
+		[DllImport(ZLibDll.Name32, EntryPoint = "unzOpen", ExactSpelling = true, CharSet = CharSet.Ansi)]
+        static extern IntPtr unzOpen_32(string fileName);
+		[DllImport(ZLibDll.Name64, EntryPoint = "unzOpen", ExactSpelling = true, CharSet = CharSet.Ansi)]
+		static extern IntPtr unzOpen_64(string fileName);
+
+		internal static IntPtr unzOpen(string comment)
+		{
+			if (Is64)
+				return unzOpen_64(comment);
+			else
+				return unzOpen_32(comment);
+		}
 
         /// <summary>Closes a zip file opened with unzipOpen.</summary>
         /// <param name="handle">The zip file handle opened by <see cref="unzOpenCurrentFile"/>.</param>
@@ -131,8 +192,18 @@ namespace ZLibNet
         ///   <para>Zero if there was no error.</para>
         ///   <para>Otherwise a value less than zero.  See <see cref="ErrorCode"/> for the specific reason.</para>
         /// </returns>
-		[DllImport(ZLibDll.Name)]
-        public static extern int unzClose(IntPtr handle);
+		[DllImport(ZLibDll.Name32, EntryPoint = "unzClose", ExactSpelling = true)]
+        static extern int unzClose_32(IntPtr handle);
+		[DllImport(ZLibDll.Name64, EntryPoint = "unzClose", ExactSpelling = true)]
+		static extern int unzClose_64(IntPtr handle);
+
+		internal static int unzClose(IntPtr handle)
+		{
+			if (Is64)
+				return unzClose_64(handle);
+			else
+				return unzClose_32(handle);
+		}
 
         /// <summary>Get global information about the zip file.</summary>
         /// <param name="handle">The zip file handle opened by <see cref="unzOpenCurrentFile"/>.</param>
@@ -141,8 +212,18 @@ namespace ZLibNet
         ///   <para>Zero if there was no error.</para>
         ///   <para>Otherwise a value less than zero.  See <see cref="ErrorCode"/> for the specific reason.</para>
         /// </returns>
-		[DllImport(ZLibDll.Name)]
-        public unsafe static extern int unzGetGlobalInfo(IntPtr handle, ZipFileInfo* globalInfoPtr);
+		[DllImport(ZLibDll.Name32, EntryPoint = "unzGetGlobalInfo", ExactSpelling = true)]
+        unsafe static extern int unzGetGlobalInfo_32(IntPtr handle, ZipFileInfo* globalInfoPtr);
+		[DllImport(ZLibDll.Name64, EntryPoint = "unzGetGlobalInfo", ExactSpelling = true)]
+		unsafe static extern int unzGetGlobalInfo_64(IntPtr handle, ZipFileInfo* globalInfoPtr);
+
+		unsafe internal static int unzGetGlobalInfo(IntPtr handle, ZipFileInfo* globalInfoPtr)
+		{
+			if (Is64)
+				return unzGetGlobalInfo_64(handle, globalInfoPtr);
+			else
+				return unzGetGlobalInfo_32(handle, globalInfoPtr);
+		}
 
         /// <summary>Get the comment associated with the entire zip file.</summary>
         /// <param name="handle">The zip file handle opened by <see cref="unzOpenCurrentFile"/></param>
@@ -152,8 +233,18 @@ namespace ZLibNet
         ///   <para>The number of characters in the comment if there was no error.</para>
         ///   <para>Otherwise a value less than zero.  See <see cref="ErrorCode"/> for the specific reason.</para>
         /// </returns>
-		[DllImport(ZLibDll.Name)]
-        public static extern int unzGetGlobalComment(IntPtr handle, byte[] commentBuffer, uint commentBufferLength);
+		[DllImport(ZLibDll.Name32, EntryPoint = "unzGetGlobalComment", ExactSpelling = true)]
+        static extern int unzGetGlobalComment_32(IntPtr handle, byte[] commentBuffer, uint commentBufferLength);
+		[DllImport(ZLibDll.Name64, EntryPoint = "unzGetGlobalComment", ExactSpelling = true)]
+		static extern int unzGetGlobalComment_64(IntPtr handle, byte[] commentBuffer, uint commentBufferLength);
+
+		internal static int unzGetGlobalComment(IntPtr handle, byte[] commentBuffer, uint commentBufferLength)
+		{
+			if (Is64)
+				return unzGetGlobalComment_64(handle, commentBuffer, commentBufferLength);
+			else
+				return unzGetGlobalComment_32(handle, commentBuffer, commentBufferLength);
+		}
 
         /// <summary>Set the current file of the zip file to the first file.</summary>
         /// <param name="handle">The zip file handle opened by <see cref="unzOpenCurrentFile"/>.</param>
@@ -161,8 +252,18 @@ namespace ZLibNet
         ///   <para>Zero if there was no error.</para>
         ///   <para>Otherwise a value less than zero.  See <see cref="ErrorCode"/> for the specific reason.</para>
         /// </returns>
-		[DllImport(ZLibDll.Name)]
-        public static extern int unzGoToFirstFile(IntPtr handle);
+		[DllImport(ZLibDll.Name32, EntryPoint = "unzGoToFirstFile", ExactSpelling = true)]
+        static extern int unzGoToFirstFile_32(IntPtr handle);
+		[DllImport(ZLibDll.Name64, EntryPoint = "unzGoToFirstFile", ExactSpelling = true)]
+		static extern int unzGoToFirstFile_64(IntPtr handle);
+
+		internal static int unzGoToFirstFile(IntPtr handle)
+		{
+			if (Is64)
+				return unzGoToFirstFile_64(handle);
+			else
+				return unzGoToFirstFile_32(handle);
+		}
 
         /// <summary>Set the current file of the zip file to the next file.</summary>
         /// <param name="handle">The zip file handle opened by <see cref="unzOpenCurrentFile"/>.</param>
@@ -170,8 +271,18 @@ namespace ZLibNet
         ///   <para>Zero if there was no error.</para>
         ///   <para>Otherwise <see cref="ErrorCode.EndOfListOfFile"/> if there are no more entries.</para>
         /// </returns>
-		[DllImport(ZLibDll.Name)]
-        public static extern int unzGoToNextFile(IntPtr handle);
+		[DllImport(ZLibDll.Name32, EntryPoint = "unzGoToNextFile", ExactSpelling = true)]
+        static extern int unzGoToNextFile_32(IntPtr handle);
+		[DllImport(ZLibDll.Name64, EntryPoint = "unzGoToNextFile", ExactSpelling = true)]
+		static extern int unzGoToNextFile_64(IntPtr handle);
+
+		internal static int unzGoToNextFile(IntPtr handle)
+		{
+			if (Is64)
+				return unzGoToNextFile_64(handle);
+			else
+				return unzGoToNextFile_32(handle);
+		}
 
         /// <summary>Try locate the entry in the zip file.</summary>
         /// <param name="handle">The zip file handle opened by <see cref="unzOpenCurrentFile"/>.</param>
@@ -203,8 +314,8 @@ namespace ZLibNet
         ///   <para>Zero if there was no error.</para>
         ///   <para>Otherwise a value less than zero.  See <see cref="ErrorCode"/> for the specific reason.</para>
         /// </returns>
-		[DllImport(ZLibDll.Name)]//, ExactSpelling = true)]
-        public unsafe static extern int unzGetCurrentFileInfo64(
+		[DllImport(ZLibDll.Name32, EntryPoint = "unzGetCurrentFileInfo64", ExactSpelling = true)]
+        unsafe static extern int unzGetCurrentFileInfo64_32(
 			IntPtr handle, 
 			ZipEntryInfo64* entryInfoPtr,
             byte[] entryNameBuffer, 
@@ -213,6 +324,35 @@ namespace ZLibNet
 			uint extraFieldLength,
 			byte[] commentBuffer,   
 			uint commentBufferLength);
+		[DllImport(ZLibDll.Name64, EntryPoint = "unzGetCurrentFileInfo64", ExactSpelling = true)]
+		unsafe static extern int unzGetCurrentFileInfo64_64(
+			IntPtr handle,
+			ZipEntryInfo64* entryInfoPtr,
+			byte[] entryNameBuffer,
+			uint entryNameBufferLength,
+			byte[] extraField,
+			uint extraFieldLength,
+			byte[] commentBuffer,
+			uint commentBufferLength);
+
+		unsafe static internal int unzGetCurrentFileInfo64(
+			IntPtr handle,
+			ZipEntryInfo64* entryInfoPtr,
+			byte[] entryNameBuffer,
+			uint entryNameBufferLength,
+			byte[] extraField,
+			uint extraFieldLength,
+			byte[] commentBuffer,
+			uint commentBufferLength)
+		{
+			if (Is64)
+				return unzGetCurrentFileInfo64_64(handle, entryInfoPtr, entryNameBuffer, entryNameBufferLength, extraField, extraFieldLength,
+					commentBuffer, commentBufferLength);
+			else
+				return unzGetCurrentFileInfo64_32(handle, entryInfoPtr, entryNameBuffer, entryNameBufferLength, extraField, extraFieldLength,
+					commentBuffer, commentBufferLength);
+
+		}
 
 		[DllImport("kernel32.dll")]
 		public static extern uint GetOEMCP();
@@ -225,8 +365,18 @@ namespace ZLibNet
         ///   <para>Zero if there was no error.</para>
         ///   <para>Otherwise a value from <see cref="ErrorCode"/>.</para>
         /// </returns>
-		[DllImport(ZLibDll.Name)]
-        public static extern int unzOpenCurrentFile(IntPtr handle);
+		[DllImport(ZLibDll.Name32, EntryPoint = "unzOpenCurrentFile", ExactSpelling = true)]
+        public static extern int unzOpenCurrentFile_32(IntPtr handle);
+		[DllImport(ZLibDll.Name64, EntryPoint = "unzOpenCurrentFile", ExactSpelling = true)]
+		public static extern int unzOpenCurrentFile_64(IntPtr handle);
+
+		internal static int unzOpenCurrentFile(IntPtr handle)
+		{
+			if (Is64)
+				return unzOpenCurrentFile_64(handle);
+			else
+				return unzOpenCurrentFile_32(handle);
+		}
 
         /// <summary>Close the file entry opened by <see cref="unzOpenCurrentFile"/>.</summary>
         /// <param name="handle">The zip file handle opened by <see cref="unzOpenCurrentFile"/>.</param>
@@ -235,8 +385,18 @@ namespace ZLibNet
         ///   <para>CrcError if the file was read but the Crc does not match.</para>
         ///   <para>Otherwise a value from <see cref="ErrorCode"/>.</para>
         /// </returns>
-		[DllImport(ZLibDll.Name)]
-        public static extern int unzCloseCurrentFile(IntPtr handle);
+		[DllImport(ZLibDll.Name32, EntryPoint = "unzCloseCurrentFile", ExactSpelling = true)]
+        public static extern int unzCloseCurrentFile_32(IntPtr handle);
+		[DllImport(ZLibDll.Name64, EntryPoint = "unzCloseCurrentFile", ExactSpelling = true)]
+		public static extern int unzCloseCurrentFile_64(IntPtr handle);
+
+		internal static int unzCloseCurrentFile(IntPtr handle)
+		{
+			if (Is64)
+				return unzCloseCurrentFile_64(handle);
+			else
+				return unzCloseCurrentFile_32(handle);
+		}
 
         /// <summary>Read bytes from the current zip file entry.</summary>
         /// <param name="handle">The zip file handle opened by <see cref="unzOpenCurrentFile"/>.</param>
@@ -247,8 +407,18 @@ namespace ZLibNet
         ///   <para>Zero if the end of file was reached.</para>
         ///   <para>Less than zero with error code if there is an error.  See <see cref="ErrorCode"/> for a list of possible error codes.</para>
         /// </returns>
-		[DllImport(ZLibDll.Name)]
-        public static extern int unzReadCurrentFile(IntPtr handle, byte[] buffer, uint count);
+		[DllImport(ZLibDll.Name32, EntryPoint = "unzReadCurrentFile", ExactSpelling = true)]
+        static extern int unzReadCurrentFile_32(IntPtr handle, byte[] buffer, uint count);
+		[DllImport(ZLibDll.Name64, EntryPoint = "unzReadCurrentFile", ExactSpelling = true)]
+		static extern int unzReadCurrentFile_64(IntPtr handle, byte[] buffer, uint count);
+
+		internal static int unzReadCurrentFile(IntPtr handle, byte[] buffer, uint count)
+		{
+			if (Is64)
+				return unzReadCurrentFile_64(handle, buffer, count);
+			else
+				return unzReadCurrentFile_32(handle, buffer, count);
+		}
 
         /// <summary>Give the current position in uncompressed data of the zip file entry currently opened.</summary>
         /// <param name="handle">The zip file handle opened by <see cref="unzOpenCurrentFile"/>.</param>
