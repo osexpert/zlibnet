@@ -143,10 +143,6 @@ namespace ZLibNet
                     if (value.Length > 0xffff) {
                         throw new ArgumentOutOfRangeException("Comment cannot not exceed 65535 characters.");
                     }
-					//FIXME: sjekk om UTF8! Men hvor? Kan hende vi ikke har satt utf8 enda...
-                    if (!IsAscii(value)) {
-                        throw new ArgumentException("Name can only contain Ascii 8 bit characters.");
-                    }
                 }
                 _comment = value;
             }
@@ -243,10 +239,6 @@ namespace ZLibNet
                 if (value.Length > 0xffff) {
                     throw new ArgumentOutOfRangeException("Name cannot not exceed 65535 characters.");
                 }
-				//FIXME: sjekk om UTF8! Men hvor? Kan hende vi ikke har satt utf8 enda...
-                if (!IsAscii(value)) {
-                    throw new ArgumentException("Name can only contain Ascii 8 bit characters.");
-                }
                 _name = value;
             }
         }
@@ -304,16 +296,5 @@ namespace ZLibNet
         public override string ToString() {
             return String.Format("{0} {1}", Name, base.ToString());
         }
-
-        /// <summary>Check if <paramref name="str"/> only contains Ascii 8 bit characters.</summary>
-        static bool IsAscii(string str) {
-            foreach (char ch in str) {
-                if (ch > 0xff) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
 	}
 }
