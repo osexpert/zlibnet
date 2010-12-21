@@ -441,7 +441,7 @@ namespace ZLibNet
 
 		protected override ZLibOpenType OpenType
 		{
-			get{ return ZLibOpenType.GZip; }
+			get { return ZLibOpenType.GZip; }
 		}
 		protected override ZLibWriteType WriteType
 		{

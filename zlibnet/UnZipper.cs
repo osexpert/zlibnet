@@ -56,7 +56,7 @@ namespace ZLibNet
 								if (!NoDirectoryNames)
 								{
 									string dirName = CreateUnzippedName(entry);
-									DirectoryInfo di = new DirectoryInfo(dirName);									
+									DirectoryInfo di = new DirectoryInfo(dirName);
 									if (!di.Exists)
 										di.Create();
 									SetLastWriteTimeFixed(di, entry.ModifiedTime);
@@ -126,7 +126,7 @@ namespace ZLibNet
 			return Path.GetFullPath(Destination + Path.DirectorySeparatorChar + name);
 		}
 
-		
+
 	}
 
 	public enum enIfFileExist
@@ -135,5 +135,5 @@ namespace ZLibNet
 		Skip,
 		Exception,
 	}
-	
+
 }
