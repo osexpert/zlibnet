@@ -7,19 +7,20 @@ using System.Text;
 namespace ZLibNet
 {
 
-    /// <summary>Represents a entry in a zip file.</summary>
-    public class ZipEntry {
+	/// <summary>Represents a entry in a zip file.</summary>
+	public class ZipEntry
+	{
 
-        string   _name = String.Empty;
-        uint     _crc = 0;
-        long     _compressedLength;
-        long     _uncompressedLength;
-        byte[]   _extraField = null;
-        string   _comment = String.Empty;
-        DateTime _modifiedTime = DateTime.Now;
+		string _name = String.Empty;
+		uint _crc = 0;
+		long _compressedLength;
+		long _uncompressedLength;
+		byte[] _extraField = null;
+		string _comment = String.Empty;
+		DateTime _modifiedTime = DateTime.Now;
 		FileAttributes _fileAttributes;
 		CompressionMethod _method = CompressionMethod.Deflated;
-		int _level  = (int) CompressionLevel.Default;
+		int _level = (int)CompressionLevel.Default;
 		bool _isDirectory;
 		/// <summary>
 		/// Utf8 filename/comment.
@@ -36,37 +37,44 @@ namespace ZLibNet
 			_isDirectory = isDirectory;
 		}
 
-        /// <summary>Initializes a instance of the <see cref="ZipEntry"/> class with the given name.</summary>
-        /// <param name="name">The name of entry that will be stored in the directory of the zip file.</param>
-        public ZipEntry(string name) : this(name, false){
-        }
+		/// <summary>Initializes a instance of the <see cref="ZipEntry"/> class with the given name.</summary>
+		/// <param name="name">The name of entry that will be stored in the directory of the zip file.</param>
+		public ZipEntry(string name)
+			: this(name, false)
+		{
+		}
 
 
-        /// <summary>Creates a new Zip file entry reading values from a zip file.</summary>
-        internal ZipEntry(IntPtr handle) {
-            ZipEntryInfo64 entryInfo;
-            int result = 0;
-            unsafe {
-                result = ZipLib.unzGetCurrentFileInfo64(handle, &entryInfo, null, 0, null, 0, null, 0);
-            }
-            if (result != 0) {
+		/// <summary>Creates a new Zip file entry reading values from a zip file.</summary>
+		internal ZipEntry(IntPtr handle)
+		{
+			ZipEntryInfo64 entryInfo;
+			int result = 0;
+			unsafe
+			{
+				result = ZipLib.unzGetCurrentFileInfo64(handle, &entryInfo, null, 0, null, 0, null, 0);
+			}
+			if (result != 0)
+			{
 				throw new ZipException("Could not read entry from zip file " + Name, result);
-            }
+			}
 
 			_extraField = new byte[entryInfo.ExtraFieldLength];
-            byte[] entryNameBuffer = new byte[entryInfo.FileNameLength];
-            byte[] commentBuffer   = new byte[entryInfo.CommentLength];
+			byte[] entryNameBuffer = new byte[entryInfo.FileNameLength];
+			byte[] commentBuffer = new byte[entryInfo.CommentLength];
 
-            unsafe {
-                result = ZipLib.unzGetCurrentFileInfo64(handle, &entryInfo,
-                    entryNameBuffer, (uint) entryNameBuffer.Length,
+			unsafe
+			{
+				result = ZipLib.unzGetCurrentFileInfo64(handle, &entryInfo,
+					entryNameBuffer, (uint)entryNameBuffer.Length,
 					_extraField, (uint)_extraField.Length,
-                    commentBuffer,   (uint) commentBuffer.Length);
-            }
+					commentBuffer, (uint)commentBuffer.Length);
+			}
 
-			if (result != 0) {
-                throw new ZipException("Could not read entry from zip file " + Name, result);
-            }
+			if (result != 0)
+			{
+				throw new ZipException("Could not read entry from zip file " + Name, result);
+			}
 
 			this._UTF8Encoding = BitFlag.IsSet(entryInfo.Flag, ZipEntryFlag.UTF8);
 			Encoding encoding = this._UTF8Encoding ? Encoding.UTF8 : ZipLib.OEMEncoding;
@@ -75,13 +83,13 @@ namespace ZLibNet
 			//null or empty string if empty buffer?
 			_comment = encoding.GetString(commentBuffer);
 			_crc = entryInfo.Crc;
-            _compressedLength = (long)entryInfo.CompressedSize;
+			_compressedLength = (long)entryInfo.CompressedSize;
 			_uncompressedLength = (long)entryInfo.UncompressedSize;
-            _method = (CompressionMethod) entryInfo.CompressionMethod;
+			_method = (CompressionMethod)entryInfo.CompressionMethod;
 			_modifiedTime = entryInfo.ZipDateTime;
 			_fileAttributes = (FileAttributes)entryInfo.ExternalFileAttributes;
 			_isDirectory = InterpretIsDirectory();
-        }
+		}
 
 		//private ExtraField[] GetExtraFields(byte[] _extraFields)
 		//{
@@ -117,7 +125,7 @@ namespace ZLibNet
 		{
 			bool winDir = ((_fileAttributes & FileAttributes.Directory) != 0); //windows
 			bool otherDir = _name.EndsWithDirSep(); // other os'
-			bool isDir = winDir || otherDir;		
+			bool isDir = winDir || otherDir;
 			if (isDir)
 			{
 				Debug.Assert(Name.Length > 0);
@@ -130,33 +138,39 @@ namespace ZLibNet
 		}
 
 
-        /// <summary>Gets and sets the local file comment for the entry.</summary>
-        /// <remarks>
-        ///   <para>Currently only Ascii 8 bit characters are supported in comments.</para>
-        ///   <para>A comment cannot exceed 65535 bytes.</para>
-        /// </remarks>
-        public string Comment {
-            get { return _comment; }
-            set {
-                // null comments are valid
-                if (value != null) {
-                    if (value.Length > 0xffff) {
-                        throw new ArgumentOutOfRangeException("Comment cannot not exceed 65535 characters.");
-                    }
-                }
-                _comment = value;
-            }
-        }
+		/// <summary>Gets and sets the local file comment for the entry.</summary>
+		/// <remarks>
+		///   <para>Currently only Ascii 8 bit characters are supported in comments.</para>
+		///   <para>A comment cannot exceed 65535 bytes.</para>
+		/// </remarks>
+		public string Comment
+		{
+			get { return _comment; }
+			set
+			{
+				// null comments are valid
+				if (value != null)
+				{
+					if (value.Length > 0xffff)
+					{
+						throw new ArgumentOutOfRangeException("Comment cannot not exceed 65535 characters.");
+					}
+				}
+				_comment = value;
+			}
+		}
 
-        /// <summary>Gets the compressed size of the entry data in bytes, or -1 if not known.</summary>
-        public long CompressedLength {
-            get { return _compressedLength; }
-        }
+		/// <summary>Gets the compressed size of the entry data in bytes, or -1 if not known.</summary>
+		public long CompressedLength
+		{
+			get { return _compressedLength; }
+		}
 
-        /// <summary>Gets the CRC-32 checksum of the uncompressed entry data.</summary>
-        public uint Crc {
-            get { return _crc; }
-        }
+		/// <summary>Gets the CRC-32 checksum of the uncompressed entry data.</summary>
+		public uint Crc
+		{
+			get { return _crc; }
+		}
 
 		// true = Use UTF8 for name and comment
 		public bool UTF8Encoding
@@ -171,35 +185,43 @@ namespace ZLibNet
 			}
 		}
 
-        /// <summary>Gets and sets the optional extra field data for the entry.</summary>
-        /// <remarks>ExtraField data cannot exceed 65535 bytes.</remarks>
-        public byte[] ExtraField {
-            get {
-                return _extraField;
-            }
-            set {
-                if (value.Length > 0xffff) {
-                    throw new ArgumentOutOfRangeException("ExtraField cannot not exceed 65535 bytes.");
-                }
-                _extraField = value;
-            }
-        }
+		/// <summary>Gets and sets the optional extra field data for the entry.</summary>
+		/// <remarks>ExtraField data cannot exceed 65535 bytes.</remarks>
+		public byte[] ExtraField
+		{
+			get
+			{
+				return _extraField;
+			}
+			set
+			{
+				if (value.Length > 0xffff)
+				{
+					throw new ArgumentOutOfRangeException("ExtraField cannot not exceed 65535 bytes.");
+				}
+				_extraField = value;
+			}
+		}
 
 		///// <summary>Gets and sets the default compresion method for zip file entries.  See <see cref="CompressionMethod"/> for a list of possible values.</summary>
-		public CompressionMethod Method {
-		    get { return _method; }
-		    set { _method = value; }
+		public CompressionMethod Method
+		{
+			get { return _method; }
+			set { _method = value; }
 		}
 
 		///// <summary>Gets and sets the default compresion level for zip file entries.  See <see cref="CompressionMethod"/> for a partial list of values.</summary>
-		public int Level {
-		    get { return _level; }
-		    set {
-		        if (value < -1 || value > 9) {
-		            throw new ArgumentOutOfRangeException("Level", value, "Level value must be between -1 and 9.");
-		        }
-		        _level = value;
-		    }
+		public int Level
+		{
+			get { return _level; }
+			set
+			{
+				if (value < -1 || value > 9)
+				{
+					throw new ArgumentOutOfRangeException("Level", value, "Level value must be between -1 and 9.");
+				}
+				_level = value;
+			}
 		}
 
 		public bool Zip64
@@ -214,34 +236,40 @@ namespace ZLibNet
 			}
 		}
 
-        /// <summary>Gets the size of the uncompressed entry data in in bytes.</summary>
-        public long Length {
-            get { return _uncompressedLength; }
-        }
+		/// <summary>Gets the size of the uncompressed entry data in in bytes.</summary>
+		public long Length
+		{
+			get { return _uncompressedLength; }
+		}
 
-        /// <summary>Gets and sets the modification time of the entry.</summary>
-        public DateTime ModifiedTime {
-            get { return _modifiedTime; }
-            set { _modifiedTime = value; }
-        }
+		/// <summary>Gets and sets the modification time of the entry.</summary>
+		public DateTime ModifiedTime
+		{
+			get { return _modifiedTime; }
+			set { _modifiedTime = value; }
+		}
 
-        /// <summary>Gets and sets the name of the entry.</summary>
-        /// <remarks>
-        ///   <para>Currently only Ascii 8 bit characters are supported in comments.</para>
-        ///   <para>A comment cannot exceed 65535 bytes.</para>
-        /// </remarks>
-        public string Name {
-            get { return _name; }
-            set {
-                if (value == null) {
-                    throw new ArgumentNullException("Name cannot be null.");
-                }
-                if (value.Length > 0xffff) {
-                    throw new ArgumentOutOfRangeException("Name cannot not exceed 65535 characters.");
-                }
-                _name = value;
-            }
-        }
+		/// <summary>Gets and sets the name of the entry.</summary>
+		/// <remarks>
+		///   <para>Currently only Ascii 8 bit characters are supported in comments.</para>
+		///   <para>A comment cannot exceed 65535 bytes.</para>
+		/// </remarks>
+		public string Name
+		{
+			get { return _name; }
+			set
+			{
+				if (value == null)
+				{
+					throw new ArgumentNullException("Name cannot be null.");
+				}
+				if (value.Length > 0xffff)
+				{
+					throw new ArgumentOutOfRangeException("Name cannot not exceed 65535 characters.");
+				}
+				_name = value;
+			}
+		}
 
 		internal string GetNameForZip()
 		{
@@ -253,24 +281,29 @@ namespace ZLibNet
 			return nameForZip.Replace('\\', '/');
 		}
 
-        /// <summary>Flag that indicates if this entry is a directory or a file.</summary>
-        public bool IsDirectory {
-            get {
+		/// <summary>Flag that indicates if this entry is a directory or a file.</summary>
+		public bool IsDirectory
+		{
+			get
+			{
 				return _isDirectory;
-            }
-        }
+			}
+		}
 
-        /// <summary>Gets the compression ratio as a percentage.</summary>
-        /// <remarks>Returns -1.0 if unknown.</remarks>
-        public float Ratio {
-            get {
-                float ratio = -1.0f;
-                if (Length > 0) {
-                    ratio = Convert.ToSingle(Length - CompressedLength) / Length;
-                }
-                return ratio;
-            }
-        }
+		/// <summary>Gets the compression ratio as a percentage.</summary>
+		/// <remarks>Returns -1.0 if unknown.</remarks>
+		public float Ratio
+		{
+			get
+			{
+				float ratio = -1.0f;
+				if (Length > 0)
+				{
+					ratio = Convert.ToSingle(Length - CompressedLength) / Length;
+				}
+				return ratio;
+			}
+		}
 
 		internal FileAttributes GetFileAttributesForZip()
 		{
@@ -292,9 +325,10 @@ namespace ZLibNet
 			}
 		}
 
-        /// <summary>Returns a string representation of the Zip entry.</summary>
-        public override string ToString() {
-            return String.Format("{0} {1}", Name, base.ToString());
-        }
+		/// <summary>Returns a string representation of the Zip entry.</summary>
+		public override string ToString()
+		{
+			return String.Format("{0} {1}", Name, base.ToString());
+		}
 	}
 }

@@ -8,11 +8,11 @@ namespace ZLibNet
 
 	public class Zipper
 	{
-//        public enum ZipMethod
-//        {
-//            Create,
-////			Add
-//        }
+		//        public enum ZipMethod
+		//        {
+		//            Create,
+		////			Add
+		//        }
 		public bool Recurse; //def true??
 		public string ZipFile;
 		/// <summary>
@@ -50,8 +50,8 @@ namespace ZLibNet
 		//This functionality is more confusing than usefull -> made private
 		private bool NoDirectoryEntries = false;
 		public ZList<string> ExcludeFollowing = new ZList<string>();
-		public ZList<string> IncludeOnlyFollowing = new ZList<string>(); 
-//		public bool DontCheckNames;
+		public ZList<string> IncludeOnlyFollowing = new ZList<string>();
+		//		public bool DontCheckNames;
 		public bool UseTempFile = true; //bad def?
 		public enPathInZip PathInZip = enPathInZip.Relative; //good def? yes
 		public string Comment;
@@ -73,7 +73,7 @@ namespace ZLibNet
 			if (UseTempFile)
 			{
 				realZipFile = ZipFile;
-				ZipFile = GetTempFileName(ZipFile);			
+				ZipFile = GetTempFileName(ZipFile);
 			}
 
 			FileSpecMatcher excludes = null;
@@ -106,7 +106,7 @@ namespace ZLibNet
 
 					foreach (FileSystemEntry fsEntry in fsEntries)
 					{
-						if (IsIncludeFile(fsEntry.ZippedName, fsEntry.IsDirectory,  includes, excludes))
+						if (IsIncludeFile(fsEntry.ZippedName, fsEntry.IsDirectory, includes, excludes))
 						{
 							if (fsEntry.FileSystemInfo is DirectoryInfo)
 							{
@@ -120,7 +120,7 @@ namespace ZLibNet
 								entry.UTF8Encoding = this.UTF8Encoding;
 								entry.Zip64 = this.Zip64;
 								entry.Method = CompressionMethod.Stored; //DIR
-//								entry.Comment = Comment;
+								//								entry.Comment = Comment;
 								writer.AddEntry(entry);
 							}
 							else
@@ -133,7 +133,7 @@ namespace ZLibNet
 								entry.FileAttributes = fi.Attributes;
 								entry.UTF8Encoding = this.UTF8Encoding;
 								entry.Zip64 = this.Zip64;
-//								entry.Comment = Comment;
+								//								entry.Comment = Comment;
 								if (fi.Length == 0 || IsStoreFile(fsEntry.ZippedName))
 									entry.Method = CompressionMethod.Stored;
 								writer.AddEntry(entry);
@@ -193,7 +193,7 @@ namespace ZLibNet
 
 		private List<FileSystemEntry> CollectFileSystemEntries()
 		{
-			Dictionary<string, FileSystemEntry> htEntries = new Dictionary<string,FileSystemEntry>();
+			Dictionary<string, FileSystemEntry> htEntries = new Dictionary<string, FileSystemEntry>();
 
 			foreach (string item in ItemList)
 			{
@@ -230,7 +230,7 @@ namespace ZLibNet
 			}
 		}
 
-		private void ProcessDir(Dictionary<string, FileSystemEntry> htEntries, 
+		private void ProcessDir(Dictionary<string, FileSystemEntry> htEntries,
 			DirectoryInfo baseDi, DirectoryInfo di, string itemFileName)
 		{
 			if (AddDirEntries && di != baseDi)
@@ -276,7 +276,7 @@ namespace ZLibNet
 			{
 				htEntries.Add(entryKey, fsEntry);
 			}
-			
+
 		}
 
 		class FileSystemEntry
