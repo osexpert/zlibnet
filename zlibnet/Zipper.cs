@@ -39,8 +39,12 @@ namespace ZLibNet
 		//ABC\TEXT.C is selected. If recurseFlag is TRUE, both files are selected
 		//
 		//
-		// PS: c:\some\dir or c:\some\dir\ will not include any files in dir (or if recursive, subdirs).
-		// This may not be logical, but DZ works this way as well.
+		// PS: c:\some\dir or c:\some\dir\ will not include any files in dir (or if recursive, files in subdirs).
+		// It will include subdirs thou (if recursive), but this is mostly useless.
+		// Conclusion: it is meaningless to add dirs without file/mask to ItemList.
+		//
+		// The most logical would be to add *.* automatically if no file/mask specified,
+		// but keep DZ compat for now. Maybe change later.
 		/// </summary>
 		public ZList<string> ItemList = new ZList<string>();
 		/// <summary>
@@ -108,7 +112,7 @@ namespace ZLibNet
 					{
 						if (IsIncludeFile(fsEntry.ZippedName, fsEntry.IsDirectory, includes, excludes))
 						{
-							if (fsEntry.FileSystemInfo is DirectoryInfo)
+							if (fsEntry.IsDirectory)
 							{
 								if (!AddDirEntries)
 									throw new Exception("!AddDirEntries but still got dir");
@@ -120,7 +124,6 @@ namespace ZLibNet
 								entry.UTF8Encoding = this.UTF8Encoding;
 								entry.Zip64 = this.Zip64;
 								entry.Method = CompressionMethod.Stored; //DIR
-								//								entry.Comment = Comment;
 								writer.AddEntry(entry);
 							}
 							else
@@ -133,7 +136,6 @@ namespace ZLibNet
 								entry.FileAttributes = fi.Attributes;
 								entry.UTF8Encoding = this.UTF8Encoding;
 								entry.Zip64 = this.Zip64;
-								//								entry.Comment = Comment;
 								if (fi.Length == 0 || IsStoreFile(fsEntry.ZippedName))
 									entry.Method = CompressionMethod.Stored;
 								writer.AddEntry(entry);
@@ -193,7 +195,7 @@ namespace ZLibNet
 
 		private List<FileSystemEntry> CollectFileSystemEntries()
 		{
-			Dictionary<string, FileSystemEntry> htEntries = new Dictionary<string, FileSystemEntry>();
+			Dictionary<string, FileSystemEntry> htEntries = new Dictionary<string, FileSystemEntry>(StringComparer.OrdinalIgnoreCase);
 
 			foreach (string item in ItemList)
 			{
@@ -218,7 +220,7 @@ namespace ZLibNet
 			}
 
 			List<FileSystemEntry> result = new List<FileSystemEntry>(htEntries.Values);
-			result.Sort((a, b) => a.ZippedName.CompareTo(b.ZippedName));
+			result.Sort();
 			return result;
 		}
 
@@ -238,8 +240,7 @@ namespace ZLibNet
 				AddFsEntry(htEntries, baseDi, di);
 			}
 
-			// TODO: maybe treat no file name as *.*? (see ItemList comment)
-			// di.GetFiles("") does work (always returns 0 files). but this is more readable/logical:
+			// di.GetFiles("") does work (always returns 0 files), but this is more readable/logical:
 			if (itemFileName.Length > 0)
 			{
 				foreach (FileInfo fi in di.GetFiles(itemFileName))
@@ -251,45 +252,38 @@ namespace ZLibNet
 
 		private void AddFsEntry(Dictionary<string, FileSystemEntry> htEntries, DirectoryInfo baseDi, FileSystemInfo fsi)
 		{
-			FileSystemEntry fsEntry = new FileSystemEntry();
-			fsEntry.ZippedName = CreateZippedName(baseDi, fsi);
-			fsEntry.FileSystemInfo = fsi;
-
-			string entryKey = fsEntry.ZippedName.ToUpperInvariant();
+			string zippedName = GetPathInZip(baseDi, fsi);
+			FileSystemEntry fsEntry = new FileSystemEntry(zippedName, fsi);
+			// Remove trailing dir sep from key since we want to catch file and dirs with same name clash
+			string key = zippedName.TrimEndDirSep();
 			FileSystemEntry existingEntry = null;
-			if (htEntries.TryGetValue(entryKey, out existingEntry))
+			if (htEntries.TryGetValue(key, out existingEntry))
 			{
-				if (existingEntry.FileSystemInfo.FullName.Equals(fsEntry.FileSystemInfo.FullName, StringComparison.OrdinalIgnoreCase))
+				if (fsEntry.IsDirectory && existingEntry.IsDirectory)
 				{
-					//ok. same file added (several times) as same file in zip -> just add it once
+					//don't care about two different dirs added with same name in zip. DZ does the same.
+				}
+				else if (fsEntry.IsFile && existingEntry.IsFile &&
+						existingEntry.FullName.Equals(fsEntry.FullName, StringComparison.OrdinalIgnoreCase))
+				{
+					//ok. same file added (several times) with same name in zip -> just add it once
 				}
 				else
 				{
-					//not ok. different files added as same file in zip
-					throw new ArgumentException(string.Format("both file {0} and {1} maps to {2} in zip",
+					//not ok. different files/file+dir added with same name in zip
+					throw new ArgumentException(string.Format("Both {0} {1} and {2} {3} maps to {4} in zip",
+						existingEntry.IsDirectory ? "dir" : "file",
 						existingEntry.FileSystemInfo.FullName,
+						fsEntry.IsDirectory ? "dir" : "file",
 						fsEntry.FileSystemInfo.FullName,
 						fsEntry.ZippedName));
 				}
 			}
 			else
 			{
-				htEntries.Add(entryKey, fsEntry);
+				htEntries.Add(key, fsEntry);
 			}
 
-		}
-
-		class FileSystemEntry
-		{
-			public string ZippedName;
-			public FileSystemInfo FileSystemInfo;
-			public bool IsDirectory
-			{
-				get
-				{
-					return FileSystemInfo is DirectoryInfo;
-				}
-			}
 		}
 
 		private bool IsIncludeFile(string zippedName, bool isDir, FileSpecMatcher includes, FileSpecMatcher excludes)
@@ -299,11 +293,6 @@ namespace ZLibNet
 					return true;
 
 			return false;
-		}
-
-		private string GetRelativeName(string full, string baseDir)
-		{
-			return full.Substring(baseDir.Length).TrimStartDirSep();
 		}
 
 		private string GetTempFileName(string zipFile)
@@ -322,7 +311,7 @@ namespace ZLibNet
 			}
 		}
 
-		private string CreateZippedName(DirectoryInfo baseDi, FileSystemInfo fsi)
+		private string GetPathInZip(DirectoryInfo baseDi, FileSystemInfo fsi)
 		{
 			string name = null;
 
@@ -331,8 +320,8 @@ namespace ZLibNet
 
 			switch (PathInZip)
 			{
-				case enPathInZip.Absolute: //Absolute = relative from root dir
-					//name = fsi.FullName.Substring(baseDi.Root.FullName.Length).TrimStartDirSep();
+				//Absolute = relative from root dir
+				case enPathInZip.Absolute:
 					name = GetRelativeName(fsi.FullName, baseDi.Root.FullName);
 					break;
 				// AbsoluteRoot is not supported by Windows Compressed folders! (Will show zip as empty)
@@ -350,21 +339,66 @@ namespace ZLibNet
 
 			}
 
-			//Hmm..is this needed???
-			//Egentlig ikke, men det gir samme sortering som i DZ, som gjøre compare enklere/mulig.
+			if (name.Length == 0)
+				throw new Exception(string.Format("Zipped name for {0} {1} is empty",
+					fsi is DirectoryInfo ? "dir" : "file",
+					fsi.FullName));
+
+			//Not really needed, but will give same sorting as DZ, making comparison with DZ easier/possible.
 			if (fsi is DirectoryInfo)
-				name += @"\";
+				name = name.SetEndDirSep();
 
 			return name;
+		}
+
+		private string GetRelativeName(string full, string baseDir)
+		{
+			return full.Substring(baseDir.Length).TrimStartDirSep();
+		}
+
+		/// <summary>
+		/// 
+		/// </summary>
+		class FileSystemEntry : IComparable<FileSystemEntry>
+		{
+			public string ZippedName;
+			public FileSystemInfo FileSystemInfo;
+
+			public FileSystemEntry(string zippedName, FileSystemInfo fsi)
+			{
+				this.ZippedName = zippedName;
+				this.FileSystemInfo = fsi;
+			}
+
+			public bool IsFile
+			{
+				get { return !IsDirectory; }
+			}
+			public bool IsDirectory
+			{
+				get { return FileSystemInfo is DirectoryInfo; }
+			}
+			public string FullName
+			{
+				get { return FileSystemInfo.FullName; }
+			}
+
+			public int CompareTo(FileSystemEntry that)
+			{
+				return this.ZippedName.CompareTo(that.ZippedName);
+			}
 		}
 
 	}
 
 	public enum enPathInZip
 	{
+		/// <summary>
+		/// relative to item in ItemList
+		/// </summary>
 		Relative,
 		/// <summary>
-		/// Absolute from first directory (\test\a.c)
+		/// Absolute from first directory on drive (test\a.c)
 		/// </summary>
 		Absolute,
 		/// <summary>
