@@ -122,7 +122,7 @@ namespace ZLibNet
 				name = entry.Name.TrimStartDirSep(); //trim not requred since we dont use Path.Combine, but do it anyways
 
 			//PS: don't use Path.Combine here! if name is absolute, it will override destination!
-			//use Path.GetFullPath no normalize path. also it will give error if invalid chars in path
+			//use Path.GetFullPath to normalize path. also it will give error if invalid chars in path
 			return Path.GetFullPath(Destination + Path.DirectorySeparatorChar + name);
 		}
 

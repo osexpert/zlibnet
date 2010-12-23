@@ -278,6 +278,7 @@ namespace ZLibNet
 			if (_isDirectory)
 				nameForZip = nameForZip.SetEndDirSep();
 
+			// name in zip should always be stored with slashes (for compat)
 			return nameForZip.Replace('\\', '/');
 		}
 

@@ -38,7 +38,13 @@ namespace ZLibNet
 			char lastChar = str[str.Length - 1];
 			return lastChar == Path.DirectorySeparatorChar || lastChar == Path.AltDirectorySeparatorChar;
 		}
-
+		public static bool StartsWithDirSep(this string str)
+		{
+			if (str.Length == 0)
+				return false;
+			char firstChar = str[0];
+			return firstChar == Path.DirectorySeparatorChar || firstChar == Path.AltDirectorySeparatorChar;
+		}
 		public static bool WildcardMatch(this string str, string wildcompare, bool ignoreCase)
 		{
 			if (ignoreCase)
