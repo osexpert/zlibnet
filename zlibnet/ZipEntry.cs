@@ -48,12 +48,8 @@ namespace ZLibNet
 		/// <summary>Creates a new Zip file entry reading values from a zip file.</summary>
 		internal ZipEntry(IntPtr handle)
 		{
-			ZipEntryInfo64 entryInfo;
-			int result = 0;
-			unsafe
-			{
-				result = ZipLib.unzGetCurrentFileInfo64(handle, &entryInfo, null, 0, null, 0, null, 0);
-			}
+			ZipEntryInfo64 entryInfo = new ZipEntryInfo64();
+			int result = ZipLib.unzGetCurrentFileInfo64(handle, out entryInfo, null, 0, null, 0, null, 0);
 			if (result != 0)
 			{
 				throw new ZipException("Could not read entry from zip file " + Name, result);
@@ -63,13 +59,10 @@ namespace ZLibNet
 			byte[] entryNameBuffer = new byte[entryInfo.FileNameLength];
 			byte[] commentBuffer = new byte[entryInfo.CommentLength];
 
-			unsafe
-			{
-				result = ZipLib.unzGetCurrentFileInfo64(handle, &entryInfo,
-					entryNameBuffer, (uint)entryNameBuffer.Length,
-					_extraField, (uint)_extraField.Length,
-					commentBuffer, (uint)commentBuffer.Length);
-			}
+			result = ZipLib.unzGetCurrentFileInfo64(handle, out entryInfo,
+				entryNameBuffer, (uint)entryNameBuffer.Length,
+				_extraField, (uint)_extraField.Length,
+				commentBuffer, (uint)commentBuffer.Length);
 
 			if (result != 0)
 			{

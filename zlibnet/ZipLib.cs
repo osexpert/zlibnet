@@ -54,9 +54,9 @@ namespace ZLibNet
 			level contain the level of compression (can be Z_DEFAULT_COMPRESSION)
 		*/
 		[DllImport(ZLibDll.Name32, EntryPoint = "zipOpenNewFileInZip4_64", ExactSpelling = true)]
-		unsafe static extern int zipOpenNewFileInZip4_64_32(IntPtr handle,
+		static extern int zipOpenNewFileInZip4_64_32(IntPtr handle,
 			byte[] entryName,
-			ZipFileEntryInfo* entryInfoPtr,
+			ref ZipFileEntryInfo entryInfoPtr,
 			byte[] extraField,
 			uint extraFieldLength,
 			byte[] extraFieldGlobal,
@@ -74,9 +74,9 @@ namespace ZLibNet
 			uint flagBase,
 			int zip64);
 		[DllImport(ZLibDll.Name64, EntryPoint = "zipOpenNewFileInZip4_64", ExactSpelling = true)]
-		unsafe static extern int zipOpenNewFileInZip4_64_64(IntPtr handle,
+		static extern int zipOpenNewFileInZip4_64_64(IntPtr handle,
 			byte[] entryName,
-			ZipFileEntryInfo* entryInfoPtr,
+			ref ZipFileEntryInfo entryInfoPtr,
 			byte[] extraField,
 			uint extraFieldLength,
 			byte[] extraFieldGlobal,
@@ -95,9 +95,9 @@ namespace ZLibNet
 			int zip64);
 
 
-		public static unsafe int zipOpenNewFileInZip4_64(IntPtr handle,
+		public static int zipOpenNewFileInZip4_64(IntPtr handle,
 			byte[] entryName,
-			ZipFileEntryInfo* entryInfoPtr,
+			ref ZipFileEntryInfo entryInfoPtr,
 			byte[] extraField,
 			uint extraFieldLength,
 			byte[] extraFieldGlobal,
@@ -110,12 +110,12 @@ namespace ZLibNet
 			)
 		{
 			if (Is64)
-				return zipOpenNewFileInZip4_64_64(handle, entryName, entryInfoPtr, extraField, extraFieldLength,
+				return zipOpenNewFileInZip4_64_64(handle, entryName, ref entryInfoPtr, extraField, extraFieldLength,
 					extraFieldGlobal, extraFieldGlobalLength, comment, method, level, 0, -ZLib.MAX_WBITS,
 					ZLib.DEF_MEM_LEVEL, ZLib.Z_DEFAULT_STRATEGY,
 					null, 0, ZLib.VERSIONMADEBY, flagBase, zip64 ? 1 : 0);
 			else
-				return zipOpenNewFileInZip4_64_32(handle, entryName, entryInfoPtr, extraField, extraFieldLength,
+				return zipOpenNewFileInZip4_64_32(handle, entryName, ref entryInfoPtr, extraField, extraFieldLength,
 					extraFieldGlobal, extraFieldGlobalLength, comment, method, level, 0, -ZLib.MAX_WBITS,
 					ZLib.DEF_MEM_LEVEL, ZLib.Z_DEFAULT_STRATEGY,
 					null, 0, ZLib.VERSIONMADEBY, flagBase, zip64 ? 1 : 0);
@@ -213,16 +213,16 @@ namespace ZLibNet
 		///   <para>Otherwise a value less than zero.  See <see cref="ErrorCode"/> for the specific reason.</para>
 		/// </returns>
 		[DllImport(ZLibDll.Name32, EntryPoint = "unzGetGlobalInfo", ExactSpelling = true)]
-		unsafe static extern int unzGetGlobalInfo_32(IntPtr handle, ZipFileInfo* globalInfoPtr);
+		static extern int unzGetGlobalInfo_32(IntPtr handle, out ZipFileInfo globalInfoPtr);
 		[DllImport(ZLibDll.Name64, EntryPoint = "unzGetGlobalInfo", ExactSpelling = true)]
-		unsafe static extern int unzGetGlobalInfo_64(IntPtr handle, ZipFileInfo* globalInfoPtr);
+		static extern int unzGetGlobalInfo_64(IntPtr handle, out ZipFileInfo globalInfoPtr);
 
-		unsafe internal static int unzGetGlobalInfo(IntPtr handle, ZipFileInfo* globalInfoPtr)
+		internal static int unzGetGlobalInfo(IntPtr handle, out ZipFileInfo globalInfoPtr)
 		{
 			if (Is64)
-				return unzGetGlobalInfo_64(handle, globalInfoPtr);
+				return unzGetGlobalInfo_64(handle, out globalInfoPtr);
 			else
-				return unzGetGlobalInfo_32(handle, globalInfoPtr);
+				return unzGetGlobalInfo_32(handle, out globalInfoPtr);
 		}
 
 		/// <summary>Get the comment associated with the entire zip file.</summary>
@@ -315,9 +315,9 @@ namespace ZLibNet
 		///   <para>Otherwise a value less than zero.  See <see cref="ErrorCode"/> for the specific reason.</para>
 		/// </returns>
 		[DllImport(ZLibDll.Name32, EntryPoint = "unzGetCurrentFileInfo64", ExactSpelling = true)]
-		unsafe static extern int unzGetCurrentFileInfo64_32(
+		static extern int unzGetCurrentFileInfo64_32(
 			IntPtr handle,
-			ZipEntryInfo64* entryInfoPtr,
+			out ZipEntryInfo64 entryInfoPtr,
 			byte[] entryNameBuffer,
 			uint entryNameBufferLength,
 			byte[] extraField,
@@ -325,9 +325,9 @@ namespace ZLibNet
 			byte[] commentBuffer,
 			uint commentBufferLength);
 		[DllImport(ZLibDll.Name64, EntryPoint = "unzGetCurrentFileInfo64", ExactSpelling = true)]
-		unsafe static extern int unzGetCurrentFileInfo64_64(
+		static extern int unzGetCurrentFileInfo64_64(
 			IntPtr handle,
-			ZipEntryInfo64* entryInfoPtr,
+			out ZipEntryInfo64 entryInfoPtr,
 			byte[] entryNameBuffer,
 			uint entryNameBufferLength,
 			byte[] extraField,
@@ -335,9 +335,9 @@ namespace ZLibNet
 			byte[] commentBuffer,
 			uint commentBufferLength);
 
-		unsafe static internal int unzGetCurrentFileInfo64(
+		static internal int unzGetCurrentFileInfo64(
 			IntPtr handle,
-			ZipEntryInfo64* entryInfoPtr,
+			out ZipEntryInfo64 entryInfoPtr,
 			byte[] entryNameBuffer,
 			uint entryNameBufferLength,
 			byte[] extraField,
@@ -346,10 +346,10 @@ namespace ZLibNet
 			uint commentBufferLength)
 		{
 			if (Is64)
-				return unzGetCurrentFileInfo64_64(handle, entryInfoPtr, entryNameBuffer, entryNameBufferLength, extraField, extraFieldLength,
+				return unzGetCurrentFileInfo64_64(handle, out entryInfoPtr, entryNameBuffer, entryNameBufferLength, extraField, extraFieldLength,
 					commentBuffer, commentBufferLength);
 			else
-				return unzGetCurrentFileInfo64_32(handle, entryInfoPtr, entryNameBuffer, entryNameBufferLength, extraField, extraFieldLength,
+				return unzGetCurrentFileInfo64_32(handle, out entryInfoPtr, entryNameBuffer, entryNameBufferLength, extraField, extraFieldLength,
 					commentBuffer, commentBufferLength);
 
 		}
@@ -510,56 +510,6 @@ namespace ZLibNet
 		}
 
 	}
-
-
-	///// <summary>Information stored in zip file directory about an entry.</summary>
-	//[StructLayout(LayoutKind.Sequential)]
-	//internal struct ZipEntryInfo {
-	//    // <summary>Version made by (2 bytes).</summary>
-	//    public UInt32 Version;                 
-
-	//    /// <summary>Version needed to extract (2 bytes).</summary>
-	//    public UInt32 VersionNeeded;           
-
-	//    /// <summary>General purpose bit flag (2 bytes).</summary>
-	//    public UInt32 Flag;                    
-
-	//    /// <summary>Compression method (2 bytes).</summary>
-	//    public UInt32 CompressionMethod;       
-
-	//    /// <summary>Last mod file date in Dos fmt (4 bytes).</summary>
-	//    public UInt32 DosDate;                 
-
-	//    /// <summary>Crc-32 (4 bytes).</summary>
-	//    public UInt32 Crc;                     
-
-	//    /// <summary>Compressed size (4 bytes).</summary>
-	//    public UInt32 CompressedSize;          
-
-	//    /// <summary>Uncompressed size (4 bytes).</summary>
-	//    public UInt32 UncompressedSize;        
-
-	//    /// <summary>Filename length (2 bytes).</summary>
-	//    public UInt32 FileNameLength;          
-
-	//    /// <summary>Extra field length (2 bytes).</summary>
-	//    public UInt32 ExtraFieldLength;        
-
-	//    /// <summary>File comment length (2 bytes).</summary>
-	//    public UInt32 CommentLength;           
-
-	//    /// <summary>Disk number start (2 bytes).</summary>
-	//    public UInt32 DiskStartNumber;         
-
-	//    /// <summary>Internal file attributes (2 bytes).</summary>
-	//    public UInt32 InternalFileAttributes;  
-
-	//    /// <summary>External file attributes (4 bytes).</summary>
-	//    public UInt32 ExternalFileAttributes;  
-
-	//    /// <summary>File modification date of entry.</summary>
-	//    public ZipDateTimeInfo ZipDateTime;
-	//}
 
 	/// <summary>Information stored in zip file directory about an entry.</summary>
 	[StructLayout(LayoutKind.Sequential)]

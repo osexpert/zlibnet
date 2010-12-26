@@ -6,7 +6,7 @@ using System.Runtime.Serialization;
 namespace ZLibNet
 {
 	/// <summary>Provides methods and properties used to compress and decompress streams.</summary>
-	unsafe public class DeflateStream : Stream
+	public class DeflateStream : Stream
 	{
 		//		private const int BufferSize = 16384;
 
@@ -45,16 +45,13 @@ namespace ZLibNet
 			this.pCompMode = compMode;
 
 			int ret;
-			fixed (z_stream* z = &this.pZstream)
-			{
-				if (this.pCompMode == CompressionMode.Compress)
-					ret = ZLib.deflateInit(z, level, this.WriteType);
-				else
-					ret = ZLib.inflateInit(z, this.OpenType);
-			}
+			if (this.pCompMode == CompressionMode.Compress)
+				ret = ZLib.deflateInit(ref pZstream, level, this.WriteType);
+			else
+				ret = ZLib.inflateInit(ref pZstream, this.OpenType);
 
 			if (ret != ZLibReturnCode.Ok)
-				throw new ZLibException(ret);
+				throw new ZLibException(ret, pZstream.lasterrormsg);
 
 			pSuccess = true;
 		}
@@ -108,13 +105,10 @@ namespace ZLibNet
 		// Finished, free the resources used.
 		private void FreeUnmanagedResources()
 		{
-			fixed (z_stream* zstreamPtr = &pZstream)
-			{
-				if (this.pCompMode == CompressionMode.Compress)
-					ZLib.deflateEnd(zstreamPtr);
-				else
-					ZLib.inflateEnd(zstreamPtr);
-			}
+			if (this.pCompMode == CompressionMode.Compress)
+				ZLib.deflateEnd(ref pZstream);
+			else
+				ZLib.inflateEnd(ref pZstream);
 		}
 
 		protected virtual ZLibOpenType OpenType
@@ -125,6 +119,8 @@ namespace ZLibNet
 		{
 			get { return ZLibWriteType.Deflate; }
 		}
+
+		
 
 		/// <summary>Reads a number of decompressed bytes into the specified byte array.</summary>
 		/// <param name="array">The array used to store decompressed bytes.</param>
@@ -139,10 +135,11 @@ namespace ZLibNet
 			int readLen = 0;
 			if (pWorkDataPos != -1)
 			{
-				fixed (byte* workDataPtr = &pWorkData[0], bufferPtr = &buffer[0])
+				using (FixedArray workDataPtr = new FixedArray(pWorkData))
+				using (FixedArray bufferPtr = new FixedArray(buffer))
 				{
-					pZstream.next_in = &workDataPtr[pWorkDataPos];
-					pZstream.next_out = &bufferPtr[offset];
+					pZstream.next_in = workDataPtr[pWorkDataPos];
+					pZstream.next_out = bufferPtr[offset];
 					pZstream.avail_out = (uint)count;
 
 					while (pZstream.avail_out != 0)
@@ -158,9 +155,7 @@ namespace ZLibNet
 						uint inCount = pZstream.avail_in;
 						uint outCount = pZstream.avail_out;
 
-						int zlibError;
-						fixed (z_stream* zstreamPtr = &pZstream)
-							zlibError = ZLib.inflate(zstreamPtr, ZLibFlush.NoFlush); // flush method for inflate has no effect
+						int zlibError = ZLib.inflate(ref pZstream, ZLibFlush.NoFlush); // flush method for inflate has no effect
 
 						pWorkDataPos += (int)(inCount - pZstream.avail_in);
 						readLen += (int)(outCount - pZstream.avail_out);
@@ -197,11 +192,12 @@ namespace ZLibNet
 
 			pBytesIn += count;
 
-			fixed (byte* writePtr = pWorkData, bufferPtr = buffer)
+			using (FixedArray writePtr = new FixedArray(pWorkData))
+			using (FixedArray bufferPtr = new FixedArray(buffer))
 			{
-				pZstream.next_in = &bufferPtr[offset];
+				pZstream.next_in = bufferPtr[offset];
 				pZstream.avail_in = (uint)count;
-				pZstream.next_out = &writePtr[pWorkDataPos];
+				pZstream.next_out = writePtr[pWorkDataPos];
 				pZstream.avail_out = (uint)(WORK_DATA_SIZE - pWorkDataPos);
 
 				//				pCrcValue = crc32(pCrcValue, &bufferPtr[offset], (uint)count);
@@ -221,9 +217,7 @@ namespace ZLibNet
 
 					uint outCount = pZstream.avail_out;
 
-					int zlibError;
-					fixed (z_stream* zstreamPtr = &pZstream)
-						zlibError = ZLib.deflate(zstreamPtr, ZLibFlush.NoFlush);
+					int zlibError = ZLib.deflate(ref pZstream, ZLibFlush.NoFlush);
 
 					pWorkDataPos += (int)(outCount - pZstream.avail_out);
 
@@ -243,11 +237,11 @@ namespace ZLibNet
 			if (pCompMode == CompressionMode.Decompress)
 				throw new NotSupportedException("Can't flush a decompression stream.");
 
-			fixed (byte* workDataPtr = pWorkData)
+			using (FixedArray workDataPtr = new FixedArray(pWorkData))
 			{
-				pZstream.next_in = (byte*)0;
+				pZstream.next_in = IntPtr.Zero;
 				pZstream.avail_in = 0;
-				pZstream.next_out = &workDataPtr[pWorkDataPos];
+				pZstream.next_out = workDataPtr[pWorkDataPos];
 				pZstream.avail_out = (uint)(WORK_DATA_SIZE - pWorkDataPos);
 
 				int zlibError = ZLibReturnCode.Ok;
@@ -256,8 +250,7 @@ namespace ZLibNet
 					if (pZstream.avail_out != 0)
 					{
 						uint outCount = pZstream.avail_out;
-						fixed (z_stream* zstreamPtr = &pZstream)
-							zlibError = ZLib.deflate(zstreamPtr, ZLibFlush.Finish);
+						zlibError = ZLib.deflate(ref pZstream, ZLibFlush.Finish);
 
 						pWorkDataPos += (int)(outCount - pZstream.avail_out);
 						if (zlibError == ZLibReturnCode.StreamEnd)

@@ -79,12 +79,8 @@ namespace ZLibNet
 			{
 				if (_comment == null)
 				{
-					ZipFileInfo info;
-					int result = 0;
-					unsafe
-					{
-						result = ZipLib.unzGetGlobalInfo(_handle, &info);
-					}
+					ZipFileInfo info = new ZipFileInfo();
+					int result = ZipLib.unzGetGlobalInfo(_handle, out info);
 					if (result < 0)
 					{
 						string msg = String.Format("Could not read comment from zip file '{0}'.", Name);
@@ -155,7 +151,7 @@ namespace ZLibNet
 
 		public IEnumerator<ZipEntry> GetEnumerator()
 		{
-			// WIll protect agains most common case, but if someone gets two enumerators up front and uses them,
+			// Will protect agains most common case, but if someone gets two enumerators up front and uses them,
 			// we wont catch it.
 			if (_current != null)
 				throw new InvalidOperationException("Entry already open/enumeration already in progress");
@@ -165,9 +161,6 @@ namespace ZLibNet
 		IEnumerator IEnumerable.GetEnumerator()
 		{
 			return GetEnumerator();
-			//if (_current != null)
-			//    throw new InvalidOperationException("Entry already open/enumeration already in progress");
-			//return new Enumer(this);
 		}
 
 		/// <summary>Advances the enumerator to the next element of the collection.</summary>
@@ -239,12 +232,8 @@ namespace ZLibNet
 		/// <param name="buffer">The array to write data into.</param>
 		/// <param name="index">The byte offset in <paramref name="buffer"/> at which to begin writing.</param>
 		/// <param name="count">The maximum number of bytes to read.</param>
-		public int Read(byte[] buffer, int index, int count)
+		public int Read(byte[] buffer, int count)
 		{
-			if (index != 0)
-			{
-				throw new ArgumentException("index", "Only index values of zero currently supported.");
-			}
 			int bytesRead = ZipLib.unzReadCurrentFile(_handle, buffer, (uint)count);
 			if (bytesRead < 0)
 			{

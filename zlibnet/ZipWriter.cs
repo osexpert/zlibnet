@@ -88,54 +88,50 @@ namespace ZLibNet
 		/// <remarks>Closes the current entry if still active.</remarks>
 		public void AddEntry(ZipEntry entry)
 		{
-			ZipFileEntryInfo info;
+			ZipFileEntryInfo info = new ZipFileEntryInfo();
 			info.ZipDateTime = entry.ModifiedTime;
 			info.ExternalFileAttributes = (uint)entry.GetFileAttributesForZip();
 
-			int result;
-			unsafe
+			byte[] extra = null;
+			uint extraLength = 0;
+			if (entry.ExtraField != null)
 			{
-				byte[] extra = null;
-				uint extraLength = 0;
-				if (entry.ExtraField != null)
-				{
-					extra = entry.ExtraField;
-					extraLength = (uint)entry.ExtraField.Length;
-				}
-
-				string nameForZip = entry.GetNameForZip();
-
-				uint flagBase = 0;
-				if (entry.UTF8Encoding)
-					flagBase |= (flagBase & ZipEntryFlag.UTF8);
-				else
-				{
-					if (!nameForZip.IsAscii())
-						throw new ArgumentException("Name can only contain Ascii 8 bit characters.");
-					if (entry.Comment != null && !entry.Comment.IsAscii())
-						throw new ArgumentException("Comment can only contain Ascii 8 bit characters.");
-				}
-
-				Encoding encoding = entry.UTF8Encoding ? Encoding.UTF8 : ZipLib.OEMEncoding;
-				byte[] name = encoding.GetBytes(nameForZip);
-				byte[] comment = null;
-				if (entry.Comment != null)
-					comment = encoding.GetBytes(entry.Comment);
-
-				result = ZipLib.zipOpenNewFileInZip4_64(
-					_handle,
-					name,
-					&info,
-					extra,
-					extraLength,
-					null,
-					0,
-					comment, //null is ok here
-					(int)entry.Method,
-					entry.Level,
-					flagBase,
-					entry.Zip64);
+				extra = entry.ExtraField;
+				extraLength = (uint)entry.ExtraField.Length;
 			}
+
+			string nameForZip = entry.GetNameForZip();
+
+			uint flagBase = 0;
+			if (entry.UTF8Encoding)
+				flagBase |= (flagBase & ZipEntryFlag.UTF8);
+			else
+			{
+				if (!nameForZip.IsAscii())
+					throw new ArgumentException("Name can only contain Ascii 8 bit characters.");
+				if (entry.Comment != null && !entry.Comment.IsAscii())
+					throw new ArgumentException("Comment can only contain Ascii 8 bit characters.");
+			}
+
+			Encoding encoding = entry.UTF8Encoding ? Encoding.UTF8 : ZipLib.OEMEncoding;
+			byte[] name = encoding.GetBytes(nameForZip);
+			byte[] comment = null;
+			if (entry.Comment != null)
+				comment = encoding.GetBytes(entry.Comment);
+
+			int result = ZipLib.zipOpenNewFileInZip4_64(
+				_handle,
+				name,
+				ref info,
+				extra,
+				extraLength,
+				null,
+				0,
+				comment, //null is ok here
+				(int)entry.Method,
+				entry.Level,
+				flagBase,
+				entry.Zip64);
 
 			if (result < 0)
 				throw new ZipException("AddEntry error.", result);
@@ -171,7 +167,7 @@ namespace ZLibNet
 		/// <param name="buffer">The array to read data from.</param>
 		/// <param name="index">The byte offset in <paramref name="buffer"/> at which to begin reading.</param>
 		/// <param name="count">The maximum number of bytes to write.</param>
-		public void Write(byte[] buffer, int index, int count)
+		public void Write(byte[] buffer, int count)
 		{
 			int result = ZipLib.zipWriteInFileInZip(_handle, buffer, (uint)count);
 			if (result < 0)
