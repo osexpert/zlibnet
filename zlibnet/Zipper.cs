@@ -144,7 +144,7 @@ namespace ZLibNet
 								{
 									int byteCount;
 									while ((byteCount = reader.Read(pBuffer, 0, pBuffer.Length)) > 0)
-										writer.Write(pBuffer, 0, byteCount);
+										writer.Write(pBuffer, byteCount);
 								}
 							}
 
@@ -271,7 +271,7 @@ namespace ZLibNet
 				else
 				{
 					//not ok. different files/file+dir added with same name in zip
-					throw new ArgumentException(string.Format("Both {0} {1} and {2} {3} maps to {4} in zip",
+					throw new ArgumentException(string.Format("Both {0} '{1}' and {2} '{3}' maps to '{4}' in zip",
 						existingEntry.IsDirectory ? "dir" : "file",
 						existingEntry.FileSystemInfo.FullName,
 						fsEntry.IsDirectory ? "dir" : "file",
@@ -340,7 +340,7 @@ namespace ZLibNet
 			}
 
 			if (name.Length == 0)
-				throw new Exception(string.Format("Zipped name for {0} {1} is empty",
+				throw new Exception(string.Format("Zipped name for {0} '{1}' is empty",
 					fsi is DirectoryInfo ? "dir" : "file",
 					fsi.FullName));
 
@@ -394,7 +394,7 @@ namespace ZLibNet
 	public enum enPathInZip
 	{
 		/// <summary>
-		/// relative to item in ItemList
+		/// Relative to item in ItemList
 		/// </summary>
 		Relative,
 		/// <summary>
@@ -406,7 +406,7 @@ namespace ZLibNet
 		/// </summary>
 		AbsoluteRoot,
 		/// <summary>
-		/// No path stored, all files on root
+		/// No path stored, all files on root (a.c)
 		/// </summary>
 		None,
 	}

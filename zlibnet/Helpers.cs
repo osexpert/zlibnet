@@ -2,9 +2,41 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Collections;
+using System.Runtime.InteropServices;
 
 namespace ZLibNet
 {
+	public class FixedArray : IDisposable
+	{
+		GCHandle pHandle;
+		Array pArray;
+
+		public FixedArray(Array array)
+		{
+			pArray = array;
+			pHandle = GCHandle.Alloc(array, GCHandleType.Pinned);
+		}
+		#region IDisposable Members
+
+		public void Dispose()
+		{
+			pHandle.Free();
+		}
+
+		public IntPtr this[int idx]
+		{
+			get
+			{
+				return Marshal.UnsafeAddrOfPinnedArrayElement(pArray, idx);
+			}
+		}
+		public static implicit operator IntPtr(FixedArray fixedArray)
+		{
+			return fixedArray[0];
+		}
+		#endregion
+	}
+
 	public class ZList<X> : List<X>
 	{
 		public void Add(params X[] items)

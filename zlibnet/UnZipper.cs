@@ -87,7 +87,7 @@ namespace ZLibNet
 								using (FileStream writer = fi.Create())
 								{
 									int byteCount;
-									while ((byteCount = reader.Read(buffer, 0, buffer.Length)) > 0)
+									while ((byteCount = reader.Read(buffer, buffer.Length)) > 0)
 										writer.Write(buffer, 0, byteCount);
 								}
 
@@ -123,6 +123,8 @@ namespace ZLibNet
 
 			//PS: don't use Path.Combine here! if name is absolute, it will override destination!
 			//use Path.GetFullPath to normalize path. also it will give error if invalid chars in path
+			//FIXME: figure out if other ziputils allow storing relative path's in zip (\..\..\test) and how they handle extraction
+			//of such items.
 			return Path.GetFullPath(Destination + Path.DirectorySeparatorChar + name);
 		}
 
