@@ -183,7 +183,7 @@ namespace ZLibNet
 		Level9 = 9
 	}
 
-	[StructLayoutAttribute(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+	[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
 	struct z_stream
 	{
 		public IntPtr next_in;  /* next input byte */

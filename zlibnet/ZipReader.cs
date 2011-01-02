@@ -4,6 +4,7 @@ using System.Runtime.Serialization;
 using System.Diagnostics;
 using System.Text;
 using System.Collections.Generic;
+using System.IO;
 
 namespace ZLibNet
 {
@@ -22,9 +23,6 @@ namespace ZLibNet
 
 		/// <summary>Global zip file comment.</summary>
 		string _comment = null;
-
-		/// <summary>True if an entry is open for reading.</summary>
-		//        bool _entryOpen = false;
 
 		/// <summary>Current zip entry open for reading.</summary>
 		ZipEntry _current = null;
@@ -232,27 +230,44 @@ namespace ZLibNet
 		/// <param name="buffer">The array to write data into.</param>
 		/// <param name="index">The byte offset in <paramref name="buffer"/> at which to begin writing.</param>
 		/// <param name="count">The maximum number of bytes to read.</param>
-		public int Read(byte[] buffer, int count)
+		public int Read(byte[] buffer, int index, int count)
 		{
-			int bytesRead = ZipLib.unzReadCurrentFile(_handle, buffer, (uint)count);
-			if (bytesRead < 0)
+			using (FixedArray fixedBuff = new FixedArray(buffer))
 			{
-				throw new ZipException("Error reading zip entry.", bytesRead);
+				int bytesRead = ZipLib.unzReadCurrentFile(_handle, fixedBuff[index], (uint)count);
+				if (bytesRead < 0)
+				{
+					throw new ZipException("Error reading zip entry.", bytesRead);
+				}
+				return bytesRead;
 			}
-			return bytesRead;
+		}
+
+		public void Read(Stream writer)
+		{
+			int i;
+			byte[] buff = new byte[0x1000];
+			while ((i = this.Read(buff, 0, buff.Length)) > 0)
+				writer.Write(buff, 0, i);
 		}
 
 		private void CloseFile()
 		{
 			if (_handle != IntPtr.Zero)
 			{
-				CloseCurrentEntry();
-				int result = ZipLib.unzClose(_handle);
-				if (result < 0)
+				try
 				{
-					throw new ZipException("Could not close zip file.", result);
+					CloseCurrentEntry();
 				}
-				_handle = IntPtr.Zero;
+				finally
+				{
+					int result = ZipLib.unzClose(_handle);
+					if (result < 0)
+					{
+						throw new ZipException("Could not close zip file.", result);
+					}
+					_handle = IntPtr.Zero;
+				}
 			}
 		}
 

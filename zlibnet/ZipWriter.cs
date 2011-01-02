@@ -2,6 +2,7 @@ using System;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Diagnostics;
+using System.IO;
 
 namespace ZLibNet
 {
@@ -23,8 +24,8 @@ namespace ZLibNet
 		/// <summary>Zip file global comment.</summary>
 		string _comment = "";
 
-		/// <summary>True if currently writing a new zip file entry.</summary>
-		bool _entryOpen = false;
+		/// <summary>Current zip entry open for write.</summary>
+		ZipEntry _current = null;
 
 		/// <summary>Zip file handle.</summary>
 		IntPtr _handle = IntPtr.Zero;
@@ -88,6 +89,10 @@ namespace ZLibNet
 		/// <remarks>Closes the current entry if still active.</remarks>
 		public void AddEntry(ZipEntry entry)
 		{
+			//Close previous entry (if any).
+			//Will trigger write of central dir info for previous file and may throw.
+			CloseCurrentEntry();
+
 			ZipFileEntryInfo info = new ZipFileEntryInfo();
 			info.ZipDateTime = entry.ModifiedTime;
 			info.ExternalFileAttributes = (uint)entry.GetFileAttributesForZip();
@@ -136,8 +141,7 @@ namespace ZLibNet
 			if (result < 0)
 				throw new ZipException("AddEntry error.", result);
 
-			//TODO: set the ZipEntry ref instead? Easier debug etc.
-			_entryOpen = true;
+			_current = entry;
 		}
 
 
@@ -167,35 +171,51 @@ namespace ZLibNet
 		/// <param name="buffer">The array to read data from.</param>
 		/// <param name="index">The byte offset in <paramref name="buffer"/> at which to begin reading.</param>
 		/// <param name="count">The maximum number of bytes to write.</param>
-		public void Write(byte[] buffer, int count)
+		public void Write(byte[] buffer, int index, int count)
 		{
-			int result = ZipLib.zipWriteInFileInZip(_handle, buffer, (uint)count);
-			if (result < 0)
-				throw new ZipException("Write error.", result);
+			using (FixedArray fixedBuffer = new FixedArray(buffer))
+			{
+				int result = ZipLib.zipWriteInFileInZip(_handle, fixedBuffer[index], (uint)count);
+				if (result < 0)
+					throw new ZipException("Write error.", result);
+			}
 		}
 
-		private void CloseEntry()
+		public void Write(Stream reader)
 		{
-			if (_entryOpen)
+			int i;
+			byte[] buff = new byte[0x1000];
+			while ((i = reader.Read(buff, 0, buff.Length)) > 0)
+				Write(buff, 0, i);
+		}
+
+		private void CloseCurrentEntry()
+		{
+			if (_current != null)
 			{
 				int result = ZipLib.zipCloseFileInZip(_handle);
 				if (result < 0)
 					throw new ZipException("Could not close entry.", result);
-				_entryOpen = false;
+				_current = null;
 			}
 		}
 
-		void CloseFile()
+		private void CloseFile()
 		{
 			if (_handle != IntPtr.Zero)
 			{
-				CloseEntry();
-				//file comment is for some weird reason ANSI, while entry name + comment is OEM...
-				int result = ZipLib.zipClose(_handle, _comment);
-				if (result < 0)
-					throw new ZipException("Could not close zip file.", result);
-
-				_handle = IntPtr.Zero;
+				try
+				{
+					CloseCurrentEntry();
+				}
+				finally
+				{
+					//file comment is for some weird reason ANSI, while entry name + comment is OEM...
+					int result = ZipLib.zipClose(_handle, _comment);
+					if (result < 0)
+						throw new ZipException("Could not close zip file.", result);
+					_handle = IntPtr.Zero;
+				}
 			}
 		}
 	}

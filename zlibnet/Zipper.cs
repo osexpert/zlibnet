@@ -129,8 +129,8 @@ namespace ZLibNet
 							else
 							{
 								FileInfo fi = (FileInfo)fsEntry.FileSystemInfo;
-								if (fi.Length > UInt32.MaxValue)
-									throw new NotSupportedException("Files above 4GB not supported (not even with Zip64: bug in zlib/minizip, will create corrupt zip)");
+								if (!this.Zip64 && fi.Length > UInt32.MaxValue)
+									throw new NotSupportedException("Files above 4GB only supported with Zip64 enabled");
 								ZipEntry entry = new ZipEntry(fsEntry.ZippedName);
 								entry.ModifiedTime = GetLastWriteTimeFixed(fi);
 								entry.FileAttributes = fi.Attributes;
@@ -144,7 +144,7 @@ namespace ZLibNet
 								{
 									int byteCount;
 									while ((byteCount = reader.Read(pBuffer, 0, pBuffer.Length)) > 0)
-										writer.Write(pBuffer, byteCount);
+										writer.Write(pBuffer, 0, byteCount);
 								}
 							}
 

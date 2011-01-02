@@ -125,11 +125,11 @@ namespace ZLibNet
 
 		/// <summary>Write data to the zip file.</summary>
 		[DllImport(ZLibDll.Name32, EntryPoint = "zipWriteInFileInZip", ExactSpelling = true)]
-		static extern int zipWriteInFileInZip_32(IntPtr handle, byte[] buffer, uint count);
+		static extern int zipWriteInFileInZip_32(IntPtr handle, IntPtr buffer, uint count);
 		[DllImport(ZLibDll.Name64, EntryPoint = "zipWriteInFileInZip", ExactSpelling = true)]
-		static extern int zipWriteInFileInZip_64(IntPtr handle, byte[] buffer, uint count);
+		static extern int zipWriteInFileInZip_64(IntPtr handle, IntPtr buffer, uint count);
 
-		internal static int zipWriteInFileInZip(IntPtr handle, byte[] buffer, uint count)
+		internal static int zipWriteInFileInZip(IntPtr handle, IntPtr buffer, uint count)
 		{
 			if (Is64)
 				return zipWriteInFileInZip_64(handle, buffer, count);
@@ -408,11 +408,11 @@ namespace ZLibNet
 		///   <para>Less than zero with error code if there is an error.  See <see cref="ErrorCode"/> for a list of possible error codes.</para>
 		/// </returns>
 		[DllImport(ZLibDll.Name32, EntryPoint = "unzReadCurrentFile", ExactSpelling = true)]
-		static extern int unzReadCurrentFile_32(IntPtr handle, byte[] buffer, uint count);
+		static extern int unzReadCurrentFile_32(IntPtr handle, IntPtr buffer, uint count);
 		[DllImport(ZLibDll.Name64, EntryPoint = "unzReadCurrentFile", ExactSpelling = true)]
-		static extern int unzReadCurrentFile_64(IntPtr handle, byte[] buffer, uint count);
+		static extern int unzReadCurrentFile_64(IntPtr handle, IntPtr buffer, uint count);
 
-		internal static int unzReadCurrentFile(IntPtr handle, byte[] buffer, uint count)
+		internal static int unzReadCurrentFile(IntPtr handle, IntPtr buffer, uint count)
 		{
 			if (Is64)
 				return unzReadCurrentFile_64(handle, buffer, count);

@@ -87,7 +87,7 @@ namespace ZLibNet
 								using (FileStream writer = fi.Create())
 								{
 									int byteCount;
-									while ((byteCount = reader.Read(buffer, buffer.Length)) > 0)
+									while ((byteCount = reader.Read(buffer, 0, buffer.Length)) > 0)
 										writer.Write(buffer, 0, byteCount);
 								}
 
