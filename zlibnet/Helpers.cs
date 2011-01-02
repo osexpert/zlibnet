@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace ZLibNet
 {
-	public class FixedArray : IDisposable
+	internal class FixedArray : IDisposable
 	{
 		GCHandle pHandle;
 		Array pArray;
@@ -71,4 +71,5 @@ namespace ZLibNet
 		//    return bits | flag;
 		//}
 	}
+
 }
