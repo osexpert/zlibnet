@@ -35,7 +35,7 @@ namespace ZLibNet
 
 			FileSpecMatcher fileSpecs = new FileSpecMatcher(ItemList, Recurse);
 
-			bool unzippedOne = false;
+			bool unzippedSomeEntry = false;
 
 			using (ZipReader reader = new ZipReader(ZipFile))
 			{
@@ -44,61 +44,58 @@ namespace ZLibNet
 
 				foreach (ZipEntry entry in reader)
 				{
-					foreach (String fileSpec in ItemList)
+					if (fileSpecs.MatchSpecs(entry.Name, entry.IsDirectory))
 					{
-						if (fileSpecs.MatchSpecs(entry.Name, entry.IsDirectory))
+						if (entry.IsDirectory)
 						{
-							unzippedOne = true;
-
-							if (entry.IsDirectory)
+							//FIXME: bør kanskje ha sjekk på om flere filer med samme navn havner på rota og overskriver hverandre?
+							if (!NoDirectoryNames)
 							{
-								//FIXME: bør kanskje ha sjekk på om flere filer med samme navn havner på rota og overskriver hverandre?
-								if (!NoDirectoryNames)
-								{
-									string dirName = CreateUnzippedName(entry);
-									DirectoryInfo di = new DirectoryInfo(dirName);
-									if (!di.Exists)
-										di.Create();
-									SetLastWriteTimeFixed(di, entry.ModifiedTime);
-								}
-							}
-							else
-							{
-								string fileName = CreateUnzippedName(entry);
-								FileInfo fi = new FileInfo(fileName);
-								if (!fi.Directory.Exists)
-									fi.Directory.Create();
-
-								if (fi.Exists)
-								{
-									switch (IfFileExist)
-									{
-										case enIfFileExist.Exception:
-											throw new ZipException("File already exists: " + fileName);
-										case enIfFileExist.Skip:
-											continue;
-										case enIfFileExist.Overwrite:
-											break; //fall thru
-										default:
-											throw new NotImplementedException("enIfFileExist " + IfFileExist);
-									}
-								}
-
-								using (FileStream writer = fi.Create())
-								{
-									int byteCount;
-									while ((byteCount = reader.Read(buffer, 0, buffer.Length)) > 0)
-										writer.Write(buffer, 0, byteCount);
-								}
-
-								SetLastWriteTimeFixed(fi, entry.ModifiedTime);
+								string dirName = CreateUnzippedName(entry);
+								DirectoryInfo di = new DirectoryInfo(dirName);
+								if (!di.Exists)
+									di.Create();
+								SetLastWriteTimeFixed(di, entry.ModifiedTime);
 							}
 						}
+						else
+						{
+							string fileName = CreateUnzippedName(entry);
+							FileInfo fi = new FileInfo(fileName);
+							if (!fi.Directory.Exists)
+								fi.Directory.Create();
+
+							if (fi.Exists)
+							{
+								switch (IfFileExist)
+								{
+									case enIfFileExist.Exception:
+										throw new ZipException("File already exists: " + fileName);
+									case enIfFileExist.Skip:
+										continue;
+									case enIfFileExist.Overwrite:
+										break; //fall thru
+									default:
+										throw new NotImplementedException("enIfFileExist " + IfFileExist);
+								}
+							}
+
+							using (FileStream writer = fi.Create())
+							{
+								int byteCount;
+								while ((byteCount = reader.Read(buffer, 0, buffer.Length)) > 0)
+									writer.Write(buffer, 0, byteCount);
+							}
+
+							SetLastWriteTimeFixed(fi, entry.ModifiedTime);
+						}
+
+						unzippedSomeEntry = true;
 					}
 				}
 			}
 
-			if (!unzippedOne)
+			if (!unzippedSomeEntry)
 				throw new ZipException("No files to unzip");
 		}
 
