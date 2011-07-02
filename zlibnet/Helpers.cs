@@ -16,11 +16,18 @@ namespace ZLibNet
 			pArray = array;
 			pHandle = GCHandle.Alloc(array, GCHandleType.Pinned);
 		}
+
+		~FixedArray()
+		{
+			pHandle.Free();
+		}
+
 		#region IDisposable Members
 
 		public void Dispose()
 		{
 			pHandle.Free();
+			GC.SuppressFinalize(this);
 		}
 
 		public IntPtr this[int idx]

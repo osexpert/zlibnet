@@ -1,0 +1,15 @@
+1713c1713
+<         if(uncompressed_size >= 0xffffffff)
+---
+>         if(uncompressed_size >= 0xffffffff || compressed_size >= 0xffffffff )
+1726a1727,1728
+>           else
+>               err = ZIP_BADZIPFILE; // Caller passed zip64 = 0, so no room for zip64 info -> fatal
+1855c1857
+<                   err = zip64local_putValue(&zi->z_filefunc,zi->filestream, (uLong)(centraldir_pos_inzip - zi->add_position_when_writting_offset),4);
+---
+>       err = zip64local_putValue(&zi->z_filefunc,zi->filestream, (uLong)(centraldir_pos_inzip - zi->add_position_when_writting_offset),4);
+1922c1924
+<     if(pos >= 0xffffffff)
+---
+>     if(pos >= 0xffffffff || zi->number_entry > 0xFFFF)

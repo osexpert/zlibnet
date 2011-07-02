@@ -1,0 +1,16 @@
+1043c1043
+<                                                                 if(file_info.uncompressed_size == (ZPOS64_T)(unsigned long)-1)
+---
+>                                                                 if(file_info.uncompressed_size == (ZPOS64_T)0xFFFFFFFF)
+1049c1049
+<                                                                 if(file_info.compressed_size == (ZPOS64_T)(unsigned long)-1)
+---
+>                                                                 if(file_info.compressed_size == (ZPOS64_T)0xFFFFFFFF)
+1055c1055
+<                                                                 if(file_info_internal.offset_curfile == (ZPOS64_T)(unsigned long)-1)
+---
+>                                                                 if(file_info_internal.offset_curfile == (ZPOS64_T)0xFFFFFFFF)
+1062c1062
+<                                                                 if(file_info.disk_num_start == (unsigned long)-1)
+---
+>                                                                 if(file_info.disk_num_start == 0xFFFFFFFF)

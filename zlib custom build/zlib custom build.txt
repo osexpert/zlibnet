@@ -1,0 +1,12 @@
+Bug fixes for contrib/MiniZip in zlib 1.2.5.
+
+1.2.5.1:
+
+unzip.c.patch fixes following problem:
+In gcc 64bit, long can be 8 bytes and (unsingned long)-1 will become 0xFFFFFFFFFFFFFFFF (incorrect). Replace with 0xFFFFFFFF.
+
+zip.c.patch fixes following problem:
+-Adding over 64k entries created invalid zip if zip was smaller than 4GB (line 1922)
+-If entry became larger than 4GB and file was added with zip64=0, there is no room in local header extra info for zip64 info, but this was just ignored without error. Now it set 'err = ZIP_BADZIPFILE' (possibly it should 'return ZIP_BADZIPFILE', but I guess that doesn't make much difference).
+-Corner case bug/consistency: compressed size can be larger than uncompressed size (Line 1713)
+-Indentation (line 1855)
