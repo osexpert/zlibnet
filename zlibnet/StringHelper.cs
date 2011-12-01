@@ -3,14 +3,6 @@ using System.Collections.Generic;
 using System.Text;
 using System.IO;
 
-namespace System.Runtime.CompilerServices
-{
-	[AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
-	public class ExtensionAttribute : Attribute
-	{
-	}
-}
-
 namespace ZLibNet
 {
 	internal static class StringHelper
