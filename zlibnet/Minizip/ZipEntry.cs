@@ -49,7 +49,7 @@ namespace ZLibNet
 		internal ZipEntry(IntPtr handle)
 		{
 			ZipEntryInfo64 entryInfo = new ZipEntryInfo64();
-			int result = ZipLib.unzGetCurrentFileInfo64(handle, out entryInfo, null, 0, null, 0, null, 0);
+			int result = Minizip.unzGetCurrentFileInfo64(handle, out entryInfo, null, 0, null, 0, null, 0);
 			if (result != 0)
 			{
 				throw new ZipException("Could not read entry from zip file " + Name, result);
@@ -59,7 +59,7 @@ namespace ZLibNet
 			byte[] entryNameBuffer = new byte[entryInfo.FileNameLength];
 			byte[] commentBuffer = new byte[entryInfo.CommentLength];
 
-			result = ZipLib.unzGetCurrentFileInfo64(handle, out entryInfo,
+			result = Minizip.unzGetCurrentFileInfo64(handle, out entryInfo,
 				entryNameBuffer, (uint)entryNameBuffer.Length,
 				_extraField, (uint)_extraField.Length,
 				commentBuffer, (uint)commentBuffer.Length);
@@ -70,7 +70,7 @@ namespace ZLibNet
 			}
 
 			this._UTF8Encoding = BitFlag.IsSet(entryInfo.Flag, ZipEntryFlag.UTF8);
-			Encoding encoding = this._UTF8Encoding ? Encoding.UTF8 : ZipLib.OEMEncoding;
+			Encoding encoding = this._UTF8Encoding ? Encoding.UTF8 : Minizip.OEMEncoding;
 
 			_name = encoding.GetString(entryNameBuffer);
 			//null or empty string if empty buffer?

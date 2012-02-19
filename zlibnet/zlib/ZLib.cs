@@ -101,18 +101,18 @@ namespace ZLibNet
 				return deflateEnd_32(ref strm);
 		}
 
-		//[DllImport(ZLibDll.Name32, EntryPoint = "crc32", ExactSpelling = true)]
-		//static extern uint crc32_32(uint crc, byte* buf, uint len);
-		//[DllImport(ZLibDll.Name64, EntryPoint = "crc32", ExactSpelling = true)]
-		//static extern uint crc32_64(uint crc, byte* buf, uint len);
+		[DllImport(ZLibDll.Name32, EntryPoint = "crc32", ExactSpelling = true)]
+		static extern uint crc32_32(uint crc, IntPtr buffer, uint len);
+		[DllImport(ZLibDll.Name64, EntryPoint = "crc32", ExactSpelling = true)]
+		static extern uint crc32_64(uint crc, IntPtr buffer, uint len);
 
-		//internal static uint crc32(uint crc, byte* buf, uint len)
-		//{
-		//    if (Is64)
-		//        return crc32_64(crc, buf, len);
-		//    else
-		//        return crc32_32(crc, buf, len);
-		//}
+		internal static uint crc32(uint crc, IntPtr buffer, uint len)
+		{
+			if (Is64)
+				return crc32_64(crc, buffer, len);
+			else
+				return crc32_32(crc, buffer, len);
+		}
 	}
 
 	enum ZLibFlush
@@ -170,7 +170,10 @@ namespace ZLibNet
 		NoCompression = 0,
 		BestSpeed = 1,
 		BestCompression = 9,
-		Default = 5,//-1,
+		// The "real" default is -1. Currently, zlib interpret -1 as 6, but they are free to change the interpretation.
+		// The reason for overriding the default and using 5 is I want this library to match DynaZip's default
+		// compression ratio and speed, and 5 was the best match (6 was somewhat slower that dynazip default).
+		Default = 5,
 		Level0 = 0,
 		Level1 = 1,
 		Level2 = 2,
@@ -239,8 +242,8 @@ namespace ZLibNet
 					return "End of stream reaced";
 				case ZLibReturnCode.NeedDictionary:
 					return "A preset dictionary is needed";
-				case ZLibReturnCode.Errno:
-					return "Unknown error"; //consult error code
+				case ZLibReturnCode.Errno: //consult error code
+					return "Unknown error " + Marshal.GetLastWin32Error();
 				case ZLibReturnCode.StreamError:
 					return "Stream error";
 				case ZLibReturnCode.DataError:

@@ -44,17 +44,19 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
-    <Compile Include="FileSpecMatcher.cs" />
+    <Compile Include="zlib\CrcStream.cs" />
+    <Compile Include="Zipper\FileSpecMatcher.cs" />
     <Compile Include="Helpers.cs" />
+    <Compile Include="zlib\ZLibCompressors.cs" />
     <Compile Include="StringHelper.cs" />
-    <Compile Include="UnZipper.cs" />
-    <Compile Include="ZipEntry.cs" />
-    <Compile Include="Zipper.cs" />
-    <Compile Include="ZipLib.cs" />
-    <Compile Include="ZipReader.cs" />
-    <Compile Include="ZLibStream.cs" />
-    <Compile Include="ZipWriter.cs" />
-    <Compile Include="ZLib.cs" />
+    <Compile Include="Zipper\UnZipper.cs" />
+    <Compile Include="Minizip\ZipEntry.cs" />
+    <Compile Include="Zipper\Zipper.cs" />
+    <Compile Include="Minizip\Minizip.cs" />
+    <Compile Include="Minizip\ZipReader.cs" />
+    <Compile Include="zlib\ZLibStreams.cs" />
+    <Compile Include="Minizip\ZipWriter.cs" />
+    <Compile Include="zlib\ZLib.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Licenses.txt" />
