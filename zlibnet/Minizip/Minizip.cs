@@ -19,7 +19,7 @@ namespace ZLibNet
 	/// ZipLib = MiniZip part of zlib
 	/// 
 	/// </remarks>
-	internal static class ZipLib
+	internal static class Minizip
 	{
 		static bool Is64 = (IntPtr.Size == 8);
 
@@ -357,7 +357,7 @@ namespace ZLibNet
 		[DllImport("kernel32.dll")]
 		public static extern uint GetOEMCP();
 
-		public static Encoding OEMEncoding = Encoding.GetEncoding((int)ZipLib.GetOEMCP());
+		public static Encoding OEMEncoding = Encoding.GetEncoding((int)Minizip.GetOEMCP());
 
 		/// <summary>Open the zip file entry for reading.</summary>
 		/// <param name="handle">The zip file handle opened by <see cref="unzOpenCurrentFile"/>.</param>

@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 [assembly: AssemblyDescription("zlibnet")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("http://zlibnet.codeplex.com")]
-[assembly: AssemblyCopyright("Copyright (C) Jean-loup Gailly, Mark Adler, Gerry Shaw, Dave F. Baskin, Gunnar Dalsnes")]
+[assembly: AssemblyCopyright("Copyright (C) Gerry Shaw, Dave F. Baskin, Gunnar Dalsnes")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 [assembly: AssemblyVersion("1.1")]

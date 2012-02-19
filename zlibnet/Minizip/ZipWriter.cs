@@ -36,7 +36,7 @@ namespace ZLibNet
 		{
 			_fileName = fileName;
 
-			_handle = ZipLib.zipOpen(fileName, 0 /* 0 = create new, 1 = append */ );
+			_handle = Minizip.zipOpen(fileName, 0 /* 0 = create new, 1 = append */ );
 			if (_handle == IntPtr.Zero)
 			{
 				string msg = String.Format("Could not open zip file '{0}' for writing.", fileName);
@@ -118,13 +118,13 @@ namespace ZLibNet
 					throw new ArgumentException("Comment can only contain Ascii 8 bit characters.");
 			}
 
-			Encoding encoding = entry.UTF8Encoding ? Encoding.UTF8 : ZipLib.OEMEncoding;
+			Encoding encoding = entry.UTF8Encoding ? Encoding.UTF8 : Minizip.OEMEncoding;
 			byte[] name = encoding.GetBytes(nameForZip);
 			byte[] comment = null;
 			if (entry.Comment != null)
 				comment = encoding.GetBytes(entry.Comment);
 
-			int result = ZipLib.zipOpenNewFileInZip4_64(
+			int result = Minizip.zipOpenNewFileInZip4_64(
 				_handle,
 				name,
 				ref info,
@@ -175,7 +175,7 @@ namespace ZLibNet
 		{
 			using (FixedArray fixedBuffer = new FixedArray(buffer))
 			{
-				int result = ZipLib.zipWriteInFileInZip(_handle, fixedBuffer[index], (uint)count);
+				int result = Minizip.zipWriteInFileInZip(_handle, fixedBuffer[index], (uint)count);
 				if (result < 0)
 					throw new ZipException("Write error.", result);
 			}
@@ -193,7 +193,7 @@ namespace ZLibNet
 		{
 			if (_current != null)
 			{
-				int result = ZipLib.zipCloseFileInZip(_handle);
+				int result = Minizip.zipCloseFileInZip(_handle);
 				if (result < 0)
 					throw new ZipException("Could not close entry.", result);
 				_current = null;
@@ -211,7 +211,7 @@ namespace ZLibNet
 				finally
 				{
 					//file comment is for some weird reason ANSI, while entry name + comment is OEM...
-					int result = ZipLib.zipClose(_handle, _comment);
+					int result = Minizip.zipClose(_handle, _comment);
 					if (result < 0)
 						throw new ZipException("Could not close zip file.", result);
 					_handle = IntPtr.Zero;

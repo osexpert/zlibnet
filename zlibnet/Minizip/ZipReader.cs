@@ -32,7 +32,7 @@ namespace ZLibNet
 		public ZipReader(string fileName)
 		{
 			_fileName = fileName;
-			_handle = ZipLib.unzOpen(fileName);
+			_handle = Minizip.unzOpen(fileName);
 			if (_handle == IntPtr.Zero)
 			{
 				string msg = String.Format("Could not open zip file '{0}'.", fileName);
@@ -78,7 +78,7 @@ namespace ZLibNet
 				if (_comment == null)
 				{
 					ZipFileInfo info = new ZipFileInfo();
-					int result = ZipLib.unzGetGlobalInfo(_handle, out info);
+					int result = Minizip.unzGetGlobalInfo(_handle, out info);
 					if (result < 0)
 					{
 						string msg = String.Format("Could not read comment from zip file '{0}'.", Name);
@@ -86,7 +86,7 @@ namespace ZLibNet
 					}
 
 					byte[] buffer = new byte[info.CommentLength];
-					result = ZipLib.unzGetGlobalComment(_handle, buffer, (uint)buffer.Length);
+					result = Minizip.unzGetGlobalComment(_handle, buffer, (uint)buffer.Length);
 					if (result < 0)
 					{
 						string msg = String.Format("Could not read comment from zip file '{0}'.", Name);
@@ -170,12 +170,12 @@ namespace ZLibNet
 			int result;
 			if (_current == null)
 			{
-				result = ZipLib.unzGoToFirstFile(_handle);
+				result = Minizip.unzGoToFirstFile(_handle);
 			}
 			else
 			{
 				CloseCurrentEntry();
-				result = ZipLib.unzGoToNextFile(_handle);
+				result = Minizip.unzGoToNextFile(_handle);
 			}
 
 			if (result == ZipReturnCode.EndOfListOfFile)
@@ -206,7 +206,7 @@ namespace ZLibNet
 		{
 			if (_current != null)
 			{
-				int result = ZipLib.unzCloseCurrentFile(_handle);
+				int result = Minizip.unzCloseCurrentFile(_handle);
 				if (result < 0)
 				{
 					throw new ZipException("Could not close zip entry.", result);
@@ -218,7 +218,7 @@ namespace ZLibNet
 		private void OpenCurrentEntry()
 		{
 			_current = new ZipEntry(_handle);
-			int result = ZipLib.unzOpenCurrentFile(_handle);
+			int result = Minizip.unzOpenCurrentFile(_handle);
 			if (result < 0)
 			{
 				_current = null;
@@ -234,7 +234,7 @@ namespace ZLibNet
 		{
 			using (FixedArray fixedBuff = new FixedArray(buffer))
 			{
-				int bytesRead = ZipLib.unzReadCurrentFile(_handle, fixedBuff[index], (uint)count);
+				int bytesRead = Minizip.unzReadCurrentFile(_handle, fixedBuff[index], (uint)count);
 				if (bytesRead < 0)
 				{
 					throw new ZipException("Error reading zip entry.", bytesRead);
@@ -261,7 +261,7 @@ namespace ZLibNet
 				}
 				finally
 				{
-					int result = ZipLib.unzClose(_handle);
+					int result = Minizip.unzClose(_handle);
 					if (result < 0)
 					{
 						throw new ZipException("Could not close zip file.", result);
