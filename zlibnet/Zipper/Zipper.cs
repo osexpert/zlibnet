@@ -16,11 +16,11 @@ namespace ZLibNet
 		public bool Recurse; //def true??
 		public string ZipFile;
 		/// <summary>
-		/// More than 64k count zip entries in zip
+		/// More than 64k count zip entries in zip (now seems to work in any case)
 		/// More than 4GB data per zip entriy (does not work, but in minizip)
 		/// Zip's larger than 4GB is supporten in any case thou.
 		/// </summary>
-		public bool Zip64;
+		public enZip64 Zip64 = enZip64.Auto;
 		/// <summary>
 		/// Use UTF8 for zip entry name/comment
 		/// </summary>
@@ -28,7 +28,7 @@ namespace ZLibNet
 		/// <summary>
 		/// List of files, dirs etc FULL PATH. With wildcards.
 		/// 
-		//                TRUE – only the beginning of the path specification of the item must match the path
+		//  Recurse =  TRUE – only the beginning of the path specification of the item must match the path
 		//specification of the filespec for the item to be selected. This allows items within the
 		//Filespec path and in any of its subdirectories to be selected.
 		//FALSE – the path specification of the item must match that of the filespec exactly
@@ -122,20 +122,20 @@ namespace ZLibNet
 								entry.ModifiedTime = GetLastWriteTimeFixed(di);
 								entry.FileAttributes = di.Attributes;
 								entry.UTF8Encoding = this.UTF8Encoding;
-								entry.Zip64 = this.Zip64;
+								entry.Zip64 = (this.Zip64 == enZip64.Yes);
 								entry.Method = CompressionMethod.Stored; //DIR
 								writer.AddEntry(entry);
 							}
 							else
 							{
 								FileInfo fi = (FileInfo)fsEntry.FileSystemInfo;
-								if (!this.Zip64 && fi.Length > UInt32.MaxValue)
-									throw new NotSupportedException("Files above 4GB only supported with Zip64 enabled");
+								if (this.Zip64 == enZip64.No && fi.Length > UInt32.MaxValue)
+									throw new NotSupportedException("Files above 4GB only supported with Zip64 enabled or auto");
 								ZipEntry entry = new ZipEntry(fsEntry.ZippedName);
 								entry.ModifiedTime = GetLastWriteTimeFixed(fi);
 								entry.FileAttributes = fi.Attributes;
 								entry.UTF8Encoding = this.UTF8Encoding;
-								entry.Zip64 = this.Zip64;
+								entry.Zip64 = (this.Zip64 == enZip64.Yes) || (fi.Length > UInt32.MaxValue && this.Zip64 == enZip64.Auto);
 								if (fi.Length == 0 || IsStoreFile(fsEntry.ZippedName))
 									entry.Method = CompressionMethod.Stored;
 								writer.AddEntry(entry);
@@ -409,6 +409,13 @@ namespace ZLibNet
 		/// No path stored, all files on root (a.c)
 		/// </summary>
 		None,
+	}
+
+	public enum enZip64
+	{
+		Yes,
+		No,
+		Auto
 	}
 
 }
