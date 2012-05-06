@@ -13,12 +13,16 @@ namespace ZLibNet
 		//            Create,
 		////			Add
 		//        }
-		public bool Recurse; //def true??
+
+		/// <summary>
+		/// DynaZip default is false (and so are we)
+		/// </summary>
+		public bool Recurse;
 		public string ZipFile;
 		/// <summary>
-		/// More than 64k count zip entries in zip (now seems to work in any case)
-		/// More than 4GB data per zip entriy (does not work, but in minizip)
-		/// Zip's larger than 4GB is supporten in any case thou.
+		/// More than 64k count zip entries supported in any case.
+		/// More than 4GB data per zip entry only supported with Zip64.
+		/// Zip's larger than 4GB is supporten in any case.
 		/// </summary>
 		public enZip64 Zip64 = enZip64.Auto;
 		/// <summary>
@@ -28,7 +32,7 @@ namespace ZLibNet
 		/// <summary>
 		/// List of files, dirs etc FULL PATH. With wildcards.
 		/// 
-		//  Recurse =  TRUE – only the beginning of the path specification of the item must match the path
+		//  Recurse = TRUE – only the beginning of the path specification of the item must match the path
 		//specification of the filespec for the item to be selected. This allows items within the
 		//Filespec path and in any of its subdirectories to be selected.
 		//FALSE – the path specification of the item must match that of the filespec exactly
@@ -40,8 +44,9 @@ namespace ZLibNet
 		//
 		//
 		// PS: c:\some\dir or c:\some\dir\ will not include any files in dir (or if recursive, files in subdirs).
+		// PS: If adding c:\some\dir, we (and DZ) will think dir is a file.
 		// It will include subdirs thou (if recursive), but this is mostly useless.
-		// Conclusion: it is meaningless to add dirs without file/mask to ItemList.
+		// Conclusion: it is meaningless to add dirs without file/mask to ItemList (but DynaZip allows it, and so do we).
 		//
 		// The most logical would be to add *.* automatically if no file/mask specified,
 		// but keep DZ compat for now. Maybe change later.
@@ -56,7 +61,13 @@ namespace ZLibNet
 		public ZList<string> ExcludeFollowing = new ZList<string>();
 		public ZList<string> IncludeOnlyFollowing = new ZList<string>();
 		//		public bool DontCheckNames;
+		/// <summary>
+		/// DynaZip default is true (and so are we)
+		/// </summary>
 		public bool UseTempFile = true; //bad def?
+		/// <summary>
+		/// DynaZip default is Absolute (but why arent't we?)
+		/// </summary>
 		public enPathInZip PathInZip = enPathInZip.Relative; //good def? yes
 		public string Comment;
 
@@ -213,6 +224,12 @@ namespace ZLibNet
 
 					ProcessDir(htEntries, baseDi, di, itemFileName);
 
+					// problem: vi får masse direntries fra kalalog der fil ligger if recurse.
+					// i dette tilfellet vil vi bare har dirs for filer vi fant!
+					// MEN når man legger til dir slik: dir\*.*, da vil man vel gjerne ha alle dirs...
+					// DynaZip fungerer akkurat likt da, så mulig vi skulle hatt en ny collector som fungerer
+					// mer logisk. Den gammle kan bruke ItemList mens den nye kan bruke files\dirs lists kanskje?
+
 					if (Recurse)
 						foreach (DirectoryInfo subDi in di.GetDirectories())
 							dirs.Push(subDi);
@@ -235,6 +252,8 @@ namespace ZLibNet
 		private void ProcessDir(Dictionary<string, FileSystemEntry> htEntries,
 			DirectoryInfo baseDi, DirectoryInfo di, string itemFileName)
 		{
+			bool addedSomeFiles = false;
+
 			if (AddDirEntries && di != baseDi)
 			{
 				AddFsEntry(htEntries, baseDi, di);
@@ -243,14 +262,22 @@ namespace ZLibNet
 			// di.GetFiles("") does work (always returns 0 files), but this is more readable/logical:
 			if (itemFileName.Length > 0)
 			{
+				//PS: note that GetFiles will get test.srtt if we use *.srt
+				//More info: http://www.codeproject.com/Articles/153471/DirectoryInfo-GetFiles-returns-more-files-than-exp
+				//I have not added a fix for this because DynaZip works like this too.
 				foreach (FileInfo fi in di.GetFiles(itemFileName))
 				{
-					AddFsEntry(htEntries, baseDi, fi);
+					addedSomeFiles |= AddFsEntry(htEntries, baseDi, fi);
 				}
 			}
+
+			//if (addedSomeFiles && AddDirEntries && di != baseDi)
+			//{
+			//    AddFsEntry(htEntries, baseDi, di);
+			//}
 		}
 
-		private void AddFsEntry(Dictionary<string, FileSystemEntry> htEntries, DirectoryInfo baseDi, FileSystemInfo fsi)
+		private bool AddFsEntry(Dictionary<string, FileSystemEntry> htEntries, DirectoryInfo baseDi, FileSystemInfo fsi)
 		{
 			string zippedName = GetPathInZip(baseDi, fsi);
 			FileSystemEntry fsEntry = new FileSystemEntry(zippedName, fsi);
@@ -278,12 +305,13 @@ namespace ZLibNet
 						fsEntry.FileSystemInfo.FullName,
 						fsEntry.ZippedName));
 				}
+				return false;
 			}
 			else
 			{
 				htEntries.Add(key, fsEntry);
+				return true;
 			}
-
 		}
 
 		private bool IsIncludeFile(string zippedName, bool isDir, FileSpecMatcher includes, FileSpecMatcher excludes)
@@ -399,6 +427,7 @@ namespace ZLibNet
 		Relative,
 		/// <summary>
 		/// Absolute from first directory on drive (test\a.c)
+		/// This is DynaZip default.
 		/// </summary>
 		Absolute,
 		/// <summary>
