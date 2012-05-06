@@ -1,3 +1,7 @@
+v1.2	6.may 2012
+-Upgrade zlib to 1.2.7
+-Change Zip64 option to enum (Yes,No,Auto) where Auto now is default (was No)
+
 v1.1	6.jan 2011
 Fixed bug: If Unzipper.ItemList had more than one entry, unzip would not work (exctracted files would try to overwrite themself)
 
