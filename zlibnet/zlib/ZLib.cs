@@ -8,7 +8,7 @@ namespace ZLibNet
 {
 	internal static class ZLib
 	{
-		internal const string ZLibVersion = "1.2.5";
+		internal const string ZLibVersion = "1.2.8";
 		internal const int MAX_WBITS = 15; /* 32K LZ77 window */
 		internal const int DEF_MEM_LEVEL = 8;
 		internal const int Z_DEFAULT_STRATEGY = 0;
