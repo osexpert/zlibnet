@@ -10,3 +10,97 @@ zip.c.patch fixes following problem:
 -If entry became larger than 4GB and file was added with zip64=0, there is no room in local header extra info for zip64 info, but this was just ignored without error. Now it set 'err = ZIP_BADZIPFILE' (possibly it should 'return ZIP_BADZIPFILE', but I guess that doesn't make much difference).
 -Corner case bug/consistency: compressed size can be larger than uncompressed size (Line 1713)
 -Indentation (line 1855)
+
+
+Custom changes in 1.2.8.1
+
+zlibvc.def:
+
+		  setOpenUnicode                               @168
+
+ioapi.c
+
+BOOL gOpenUnicode = FALSE; 
+void setOpenUnicode(BOOL b)
+{
+	gOpenUnicode = b;
+}
+
+
+void fill_win32_filefunc64W(zlib_filefunc64_def* pzlib_filefunc_def);
+
+void fill_fopen64_filefunc (zlib_filefunc64_def*  pzlib_filefunc_def)
+{
+	if (gOpenUnicode)
+		fill_win32_filefunc64W(pzlib_filefunc_def);
+	else
+	{
+		pzlib_filefunc_def->zopen64_file = fopen64_file_func;
+		pzlib_filefunc_def->zread_file = fread_file_func;
+		pzlib_filefunc_def->zwrite_file = fwrite_file_func;
+		pzlib_filefunc_def->ztell64_file = ftell64_file_func;
+		pzlib_filefunc_def->zseek64_file = fseek64_file_func;
+		pzlib_filefunc_def->zclose_file = fclose_file_func;
+		pzlib_filefunc_def->zerror_file = ferror_file_func;
+		pzlib_filefunc_def->opaque = NULL;
+	}
+}
+
+static BOOL MySetFilePointerEx(HANDLE hFile, LARGE_INTEGER pos, LARGE_INTEGER *newPos,  DWORD dwMoveMethod)
+{
+#ifdef IOWIN32_USING_WINRT_API
+    return SetFilePointerEx(hFile, pos, newPos, dwMoveMethod);
+#else
+    LONG lHigh = pos.HighPart;
+    DWORD dwNewPos = SetFilePointer(hFile, pos.LowPart, &lHigh, dwMoveMethod /*NOT FILE_CURRENT!!! */);
+    BOOL fOk = TRUE;
+    if (dwNewPos == 0xFFFFFFFF)
+        if (GetLastError() != NO_ERROR)
+            fOk = FALSE;
+    if ((newPos != NULL) && (fOk))
+    {
+        newPos->LowPart = dwNewPos;
+        newPos->HighPart = lHigh;
+    }
+    return fOk;
+#endif
+}
+
+long ZCALLBACK win32_seek64_file_func (voidpf opaque, voidpf stream,ZPOS64_T offset,int origin)
+{
+    DWORD dwMoveMethod=0xFFFFFFFF;
+    HANDLE hFile = NULL;
+    long ret=-1;
+
+    if (stream!=NULL)
+        hFile = ((WIN32FILE_IOWIN*)stream)->hf;
+
+    switch (origin)
+    {
+        case ZLIB_FILEFUNC_SEEK_CUR :
+            dwMoveMethod = FILE_CURRENT;
+            break;
+        case ZLIB_FILEFUNC_SEEK_END :
+            dwMoveMethod = FILE_END;
+            break;
+        case ZLIB_FILEFUNC_SEEK_SET :
+            dwMoveMethod = FILE_BEGIN;
+            break;
+        default: return -1;
+    }
+
+    if (hFile)
+    {
+        LARGE_INTEGER pos;
+        pos.QuadPart = offset;
+        if (!MySetFilePointerEx(hFile, pos, NULL, dwMoveMethod /*NOT FILE_CURRENT!!! */))
+        {
+            DWORD dwErr = GetLastError();
+            ((WIN32FILE_IOWIN*)stream) -> error=(int)dwErr;
+            ret = -1;
+        }
+        else
+            ret=0;
+    }
+    return ret;
+}

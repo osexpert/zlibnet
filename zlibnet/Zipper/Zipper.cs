@@ -28,7 +28,7 @@ namespace ZLibNet
 		/// <summary>
 		/// Use UTF8 for zip entry name/comment
 		/// </summary>
-		public bool UTF8Encoding;
+		public bool UTF8Encoding = true;
 		/// <summary>
 		/// List of files, dirs etc FULL PATH. With wildcards.
 		/// 

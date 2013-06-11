@@ -109,7 +109,7 @@ namespace ZLibNet
 
 			uint flagBase = 0;
 			if (entry.UTF8Encoding)
-				flagBase |= (flagBase & ZipEntryFlag.UTF8);
+				flagBase |= ZipEntryFlag.UTF8;
 			else
 			{
 				if (!nameForZip.IsAscii())
