@@ -23,6 +23,20 @@ namespace ZLibNet
 	{
 		static bool Is64 = (IntPtr.Size == 8);
 
+		[DllImport(ZLibDll.Name32, EntryPoint = "setOpenUnicode", ExactSpelling = true)]
+		static extern void setOpenUnicode_32(bool openUnicode);
+		[DllImport(ZLibDll.Name64, EntryPoint = "setOpenUnicode", ExactSpelling = true)]
+		static extern void setOpenUnicode_64(bool openUnicode);
+
+		internal static void setOpenUnicode(bool openUnicode)
+		{
+			if (Is64)
+				setOpenUnicode_64(openUnicode);
+			else
+				setOpenUnicode_32(openUnicode);
+		}
+
+
 		/*
 		 Create a zipfile.
 		 pathname contain on Windows NT a filename like "c:\\zlib\\zlib111.zip" or on an Unix computer "zlib/zlib111.zip".
@@ -31,13 +45,15 @@ namespace ZLibNet
 		 Else, the return value is a zipFile Handle, usable with other function of this zip package.
 	 */
 		/// <summary>Create a zip file.</summary>
-		[DllImport(ZLibDll.Name32, EntryPoint = "zipOpen", ExactSpelling = true, CharSet = CharSet.Ansi)]
+		[DllImport(ZLibDll.Name32, EntryPoint = "zipOpen64", ExactSpelling = true, CharSet = CharSet.Unicode)]
 		static extern IntPtr zipOpen_32(string fileName, int append);
-		[DllImport(ZLibDll.Name64, EntryPoint = "zipOpen", ExactSpelling = true, CharSet = CharSet.Ansi)]
+		[DllImport(ZLibDll.Name64, EntryPoint = "zipOpen64", ExactSpelling = true, CharSet = CharSet.Unicode)]
 		static extern IntPtr zipOpen_64(string fileName, int append);
 
 		internal static IntPtr zipOpen(string fileName, int append)
 		{
+			setOpenUnicode(true);
+
 			if (Is64)
 				return zipOpen_64(fileName, append);
 			else
@@ -172,13 +188,15 @@ namespace ZLibNet
 		///   <para>A handle usable with other functions of the ZipLib class.</para>
 		///   <para>Otherwise IntPtr.Zero if the zip file could not e opened (file doen not exist or is not valid).</para>
 		/// </returns>
-		[DllImport(ZLibDll.Name32, EntryPoint = "unzOpen", ExactSpelling = true, CharSet = CharSet.Ansi)]
+		[DllImport(ZLibDll.Name32, EntryPoint = "unzOpen64", ExactSpelling = true, CharSet = CharSet.Unicode)]
 		static extern IntPtr unzOpen_32(string fileName);
-		[DllImport(ZLibDll.Name64, EntryPoint = "unzOpen", ExactSpelling = true, CharSet = CharSet.Ansi)]
+		[DllImport(ZLibDll.Name64, EntryPoint = "unzOpen64", ExactSpelling = true, CharSet = CharSet.Unicode)]
 		static extern IntPtr unzOpen_64(string fileName);
 
 		internal static IntPtr unzOpen(string comment)
 		{
+			setOpenUnicode(true);
+
 			if (Is64)
 				return unzOpen_64(comment);
 			else
