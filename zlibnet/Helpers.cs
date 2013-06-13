@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Collections;
 using System.Runtime.InteropServices;
+using System.IO;
 
 namespace ZLibNet
 {
@@ -79,4 +80,71 @@ namespace ZLibNet
 		//}
 	}
 
+
+	internal static class StreamHelper
+	{
+		public static void CopyTo(this Stream stream, Stream destination)
+		{
+			if (destination == null)
+			{
+				throw new ArgumentNullException("destination");
+			}
+			if (!stream.CanRead && !stream.CanWrite)
+			{
+				throw new ObjectDisposedException("StreamClosed");
+			}
+			if (!destination.CanRead && !destination.CanWrite)
+			{
+				throw new ObjectDisposedException("destination", "StreamClosed");
+			}
+			if (!stream.CanRead)
+			{
+				throw new NotSupportedException("UnreadableStream");
+			}
+			if (!destination.CanWrite)
+			{
+				throw new NotSupportedException("UnwritableStream");
+			}
+			InternalCopyTo(stream, destination, 0x1000);
+		}
+
+		public static void CopyTo(this Stream stream, Stream destination, int bufferSize)
+		{
+			if (destination == null)
+			{
+				throw new ArgumentNullException("destination");
+			}
+			if (bufferSize <= 0)
+			{
+				throw new ArgumentOutOfRangeException("bufferSize", "NeedPosNum");
+			}
+			if (!stream.CanRead && !stream.CanWrite)
+			{
+				throw new ObjectDisposedException("StreamClosed");
+			}
+			if (!destination.CanRead && !destination.CanWrite)
+			{
+				throw new ObjectDisposedException("destination", "StreamClosed");
+			}
+			if (!stream.CanRead)
+			{
+				throw new NotSupportedException("UnreadableStream");
+			}
+			if (!destination.CanWrite)
+			{
+				throw new NotSupportedException("UnwritableStream");
+			}
+			InternalCopyTo(stream, destination, bufferSize);
+		}
+
+		private static void InternalCopyTo(Stream src, Stream destination, int bufferSize)
+		{
+			int num;
+			byte[] buffer = new byte[bufferSize];
+			while ((num = src.Read(buffer, 0, buffer.Length)) != 0)
+			{
+				destination.Write(buffer, 0, num);
+			}
+		}
+	}
 }
