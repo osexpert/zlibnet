@@ -22,13 +22,13 @@ namespace ZLibNet
 		{
 			return CommonCompressor.DeCompress(CreateStream, source);
 		}
-		public static byte[] Compress(byte[] Source)
+		public static byte[] Compress(byte[] source)
 		{
-			return CommonCompressor.Compress(CreateStream, Source);
+			return CommonCompressor.Compress(CreateStream, source);
 		}
-		public static byte[] DeCompress(byte[] Source)
+		public static byte[] DeCompress(byte[] source)
 		{
-			return CommonCompressor.DeCompress(CreateStream, Source);
+			return CommonCompressor.DeCompress(CreateStream, source);
 		}
 		private static DeflateStream CreateStream(Stream s, CompressionMode cm, bool leaveOpen)
 		{
@@ -46,13 +46,13 @@ namespace ZLibNet
 		{
 			return CommonCompressor.DeCompress(CreateStream, source);
 		}
-		public static byte[] Compress(byte[] Source)
+		public static byte[] Compress(byte[] source)
 		{
-			return CommonCompressor.Compress(CreateStream, Source);
+			return CommonCompressor.Compress(CreateStream, source);
 		}
-		public static byte[] DeCompress(byte[] Source)
+		public static byte[] DeCompress(byte[] source)
 		{
-			return CommonCompressor.DeCompress(CreateStream, Source);
+			return CommonCompressor.DeCompress(CreateStream, source);
 		}
 		private static DeflateStream CreateStream(Stream s, CompressionMode cm, bool leaveOpen)
 		{
@@ -70,13 +70,13 @@ namespace ZLibNet
 		{
 			return CommonCompressor.DeCompress(CreateStream, source);
 		}
-		public static byte[] Compress(byte[] Source)
+		public static byte[] Compress(byte[] source)
 		{
-			return CommonCompressor.Compress(CreateStream, Source);
+			return CommonCompressor.Compress(CreateStream, source);
 		}
-		public static byte[] DeCompress(byte[] Source)
+		public static byte[] DeCompress(byte[] source)
 		{
-			return CommonCompressor.DeCompress(CreateStream, Source);
+			return CommonCompressor.DeCompress(CreateStream, source);
 		}
 		private static DeflateStream CreateStream(Stream s, CompressionMode cm, bool leaveOpen)
 		{
@@ -84,43 +84,63 @@ namespace ZLibNet
 		}
 	}
 
+	public static class DynazipCompressor
+	{
+		const int DZ_DEFLATE_POS = 46;
+
+		public static bool IsDynazip(byte[] source)
+		{
+			return source.Length >= 4 && BitConverter.ToInt32(source, 0) == 0x02014b50;
+		}
+
+		public static byte[] DeCompress(byte[] source)
+		{
+			if (!IsDynazip(source))
+				throw new InvalidDataException("not dynazip header");
+			using (MemoryStream srcStream = new MemoryStream(source, DZ_DEFLATE_POS, source.Length - DZ_DEFLATE_POS))
+			using (MemoryStream dstStream = DeCompress(srcStream))
+				return dstStream.ToArray();
+		}
+
+		private static MemoryStream DeCompress(Stream source)
+		{
+			MemoryStream dest = new MemoryStream();
+			DeCompress(source, dest);
+			dest.Position = 0;
+			return dest;
+		}
+
+		private static void DeCompress(Stream source, Stream dest)
+		{
+			using (DeflateStream zsSource = new DeflateStream(source, CompressionMode.Decompress, true))
+			{
+				zsSource.CopyTo(dest);
+			}
+		}
+	}
 
 	class CommonCompressor
 	{
-		private static void Compress(CreateStreamDelegate sc, Stream source, Stream dest, bool closeSource)
+		private static void Compress(CreateStreamDelegate sc, Stream source, Stream dest)
 		{
-			try
+			using (DeflateStream zsDest = sc(dest, CompressionMode.Compress, true))
 			{
-				using (DeflateStream zsDest = sc(dest, CompressionMode.Compress, true))
-				{
-					int len = 0;
-					byte[] buff = new byte[0x1000];
-					while ((len = source.Read(buff, 0, buff.Length)) > 0)
-						zsDest.Write(buff, 0, len);
-				}
-			}
-			finally
-			{
-				if (closeSource)
-					source.Dispose();
+				source.CopyTo(zsDest);
 			}
 		}
 
-		private static void DeCompress(CreateStreamDelegate sc, Stream source, Stream dest, bool closeSource)
+		private static void DeCompress(CreateStreamDelegate sc, Stream source, Stream dest)
 		{
-			using (DeflateStream zsSource = sc(source, CompressionMode.Decompress, closeSource))
+			using (DeflateStream zsSource = sc(source, CompressionMode.Decompress, true))
 			{
-				int len = 0;
-				byte[] buff = new byte[0x1000];
-				while ((len = zsSource.Read(buff, 0, buff.Length)) > 0)
-					dest.Write(buff, 0, len);
+				zsSource.CopyTo(dest);
 			}
 		}
 
 		public static MemoryStream Compress(CreateStreamDelegate sc, Stream source)
 		{
 			MemoryStream result = new MemoryStream();
-			Compress(sc, source, result, true);
+			Compress(sc, source, result);
 			result.Position = 0;
 			return result;
 		}
@@ -128,23 +148,23 @@ namespace ZLibNet
 		public static MemoryStream DeCompress(CreateStreamDelegate sc, Stream source)
 		{
 			MemoryStream result = new MemoryStream();
-			DeCompress(sc, source, result, true);
+			DeCompress(sc, source, result);
 			result.Position = 0;
 			return result;
 		}
 
-		public static byte[] Compress(CreateStreamDelegate sc, byte[] Source)
+		public static byte[] Compress(CreateStreamDelegate sc, byte[] source)
 		{
-			MemoryStream srcStream = new MemoryStream(Source);
-			MemoryStream dstStream = Compress(sc, srcStream);
-			return dstStream.ToArray();
+			using (MemoryStream srcStream = new MemoryStream(source))
+			using (MemoryStream dstStream = Compress(sc, srcStream))
+				return dstStream.ToArray();
 		}
 
-		public static byte[] DeCompress(CreateStreamDelegate sc, byte[] Source)
+		public static byte[] DeCompress(CreateStreamDelegate sc, byte[] source)
 		{
-			MemoryStream srcStream = new MemoryStream(Source);
-			MemoryStream dstStream = DeCompress(sc, srcStream);
-			return dstStream.ToArray();
+			using (MemoryStream srcStream = new MemoryStream(source))
+			using (MemoryStream dstStream = DeCompress(sc, srcStream))
+				return dstStream.ToArray();
 		}
 	}
 }

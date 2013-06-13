@@ -19,7 +19,6 @@ namespace ZLibNet
 		/// ONly valid for files. Dirs are always created and last writeTime is updated
 		/// </summary>
 		public enIfFileExist IfFileExist = enIfFileExist.Exception; //good def?
-
 		public bool NoDirectoryNames;
 		public string Destination = null;
 		byte[] buffer;
@@ -122,10 +121,32 @@ namespace ZLibNet
 			//use Path.GetFullPath to normalize path. also it will give error if invalid chars in path
 			//FIXME: figure out if other ziputils allow storing relative path's in zip (\..\..\test) and how they handle extraction
 			//of such items.
-			return Path.GetFullPath(Destination + Path.DirectorySeparatorChar + name);
+			string unzippedName = Path.GetFullPath(Destination + Path.DirectorySeparatorChar + name);
+			CreateUnzippedNameEventArgs ea = new CreateUnzippedNameEventArgs(unzippedName, entry.IsDirectory);
+			OnCreateUnzippedName(ea);
+			return ea.UnzippedName;
 		}
 
+		private void OnCreateUnzippedName(CreateUnzippedNameEventArgs ea)
+		{
+			if (CreateUnzippedNameEvent != null)
+				CreateUnzippedNameEvent(this, ea);
+		}
 
+		public event CreateUnzippedNameEventHandler CreateUnzippedNameEvent;
+
+	}
+
+	public delegate void CreateUnzippedNameEventHandler(object sender, CreateUnzippedNameEventArgs ea);
+	public class CreateUnzippedNameEventArgs : EventArgs
+	{
+		public string UnzippedName { get; set; }
+		public bool IsDirectory { get; private set; }
+		public CreateUnzippedNameEventArgs(string unzippedName, bool isDirectory)
+		{
+			this.UnzippedName = unzippedName;
+			this.IsDirectory = isDirectory;
+		}
 	}
 
 	public enum enIfFileExist
@@ -134,5 +155,4 @@ namespace ZLibNet
 		Skip,
 		Exception,
 	}
-
 }
