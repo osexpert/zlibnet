@@ -3,8 +3,8 @@ Upgrade zlib to 1.2.8
 Make custom build v1.2.8.1 where 1 bugs fixed: Incorrect move method was sent to SetFilePointer.
 Fix bug where utf8 flag was not set correctly.
 Change UTF8Encoding to default true.
-Support unicode in filename of zip itself.
-Add DynazipCompressor that can decompress dynazip streams.
+Support unicode in zip file name.
+Add DynazipCompressor that can decompress DynaZip streams.
 
 v1.2	6.may 2012
 -Upgrade zlib to 1.2.7
