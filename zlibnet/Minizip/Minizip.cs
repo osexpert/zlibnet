@@ -183,7 +183,7 @@ namespace ZLibNet
 		}
 
 		/// <summary>Opens a zip file for reading.</summary>
-		/// <param name="fileName">The name of the zip to open.  At this time only file names with ANSI (8 bit) characters are supported.</param>
+		/// <param name="fileName">The name of the zip to open.</param>
 		/// <returns>
 		///   <para>A handle usable with other functions of the ZipLib class.</para>
 		///   <para>Otherwise IntPtr.Zero if the zip file could not e opened (file doen not exist or is not valid).</para>
@@ -193,14 +193,14 @@ namespace ZLibNet
 		[DllImport(ZLibDll.Name64, EntryPoint = "unzOpen64", ExactSpelling = true, CharSet = CharSet.Unicode)]
 		static extern IntPtr unzOpen_64(string fileName);
 
-		internal static IntPtr unzOpen(string comment)
+		internal static IntPtr unzOpen(string fileName)
 		{
 			setOpenUnicode(true);
 
 			if (Is64)
-				return unzOpen_64(comment);
+				return unzOpen_64(fileName);
 			else
-				return unzOpen_32(comment);
+				return unzOpen_32(fileName);
 		}
 
 		/// <summary>Closes a zip file opened with unzipOpen.</summary>
