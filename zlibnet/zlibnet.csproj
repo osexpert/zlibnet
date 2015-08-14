@@ -65,6 +65,12 @@
     <Compile Include="zlib\ZLib.cs" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="..\zlib32.dll">
+      <Link>zlib32.dll</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\zlib64.dll">
+      <Link>zlib64.dll</Link>
+    </EmbeddedResource>
     <Content Include="Licenses.txt" />
     <Content Include="TODO.txt" />
   </ItemGroup>

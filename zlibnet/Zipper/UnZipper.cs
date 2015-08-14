@@ -13,7 +13,7 @@ namespace ZLibNet
 		/// ABC\JOG.* ABC\RUN.PCX *.HLP "SPORTS FANS\BASKETBALL.TIF"
 		/// PS: stien kan ikke ha wildcards
 		/// </summary>
-		public ZList<string> ItemList = new ZList<string>();
+		public List<string> ItemList = new List<string>();
 		public bool Recurse; //how does it work? //good def?
 		/// <summary>
 		/// ONly valid for files. Dirs are always created and last writeTime is updated

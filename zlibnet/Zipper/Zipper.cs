@@ -51,15 +51,15 @@ namespace ZLibNet
 		// The most logical would be to add *.* automatically if no file/mask specified,
 		// but keep DZ compat for now. Maybe change later.
 		/// </summary>
-		public ZList<string> ItemList = new ZList<string>();
+		public List<string> ItemList = new List<string>();
 		/// <summary>
 		/// Files to store
 		/// </summary>
-		public ZList<string> StoreSuffixes = new ZList<string>();
+		public List<string> StoreSuffixes = new List<string>();
 		//This functionality is more confusing than usefull -> made private
 		private bool NoDirectoryEntries = false;
-		public ZList<string> ExcludeFollowing = new ZList<string>();
-		public ZList<string> IncludeOnlyFollowing = new ZList<string>();
+		public List<string> ExcludeFollowing = new List<string>();
+		public List<string> IncludeOnlyFollowing = new List<string>();
 		//		public bool DontCheckNames;
 		/// <summary>
 		/// DynaZip default is true (and so are we)
