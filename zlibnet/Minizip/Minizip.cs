@@ -36,6 +36,10 @@ namespace ZLibNet
 				setOpenUnicode_32(openUnicode);
 		}
 
+		static Minizip()
+		{
+			DllLoader.Load();
+		}
 
 		/*
 		 Create a zipfile.

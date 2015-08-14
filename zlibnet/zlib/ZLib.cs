@@ -19,6 +19,11 @@ namespace ZLibNet
 
 		static bool Is64 = (IntPtr.Size == 8);
 
+		static ZLib()
+		{
+			DllLoader.Load();
+		}
+
 		[DllImport(ZLibDll.Name32, EntryPoint = "inflateInit2_", ExactSpelling = true, CharSet = CharSet.Ansi)]
 		static extern int inflateInit2_32(ref z_stream strm, int windowBits, string version, int stream_size);
 		[DllImport(ZLibDll.Name64, EntryPoint = "inflateInit2_", ExactSpelling = true, CharSet = CharSet.Ansi)]
