@@ -20,10 +20,17 @@ zlibvc.def:
 
 ioapi.c
 
-BOOL gOpenUnicode = FALSE; 
-void setOpenUnicode(BOOL b)
+extern int gOpenUnicode;
+
+zip.c
+
+int gOpenUnicode = 0;
+
+extern int ZEXPORT setOpenUnicode(int b)
 {
+	int oldVal = gOpenUnicode;
 	gOpenUnicode = b;
+	return oldVal;
 }
 
 
