@@ -24,16 +24,18 @@ namespace ZLibNet
 		static bool Is64 = (IntPtr.Size == 8);
 
 		[DllImport(ZLibDll.Name32, EntryPoint = "setOpenUnicode", ExactSpelling = true)]
-		static extern void setOpenUnicode_32(bool openUnicode);
+		static extern int setOpenUnicode_32(int openUnicode);
 		[DllImport(ZLibDll.Name64, EntryPoint = "setOpenUnicode", ExactSpelling = true)]
-		static extern void setOpenUnicode_64(bool openUnicode);
+		static extern int setOpenUnicode_64(int openUnicode);
 
-		internal static void setOpenUnicode(bool openUnicode)
+		internal static bool setOpenUnicode(bool openUnicode)
 		{
+			int oldVal;
 			if (Is64)
-				setOpenUnicode_64(openUnicode);
+				oldVal = setOpenUnicode_64(openUnicode ? 1 : 0);
 			else
-				setOpenUnicode_32(openUnicode);
+				oldVal = setOpenUnicode_32(openUnicode ? 1 : 0);
+			return oldVal == 1;
 		}
 
 		static Minizip()
@@ -54,14 +56,14 @@ namespace ZLibNet
 		[DllImport(ZLibDll.Name64, EntryPoint = "zipOpen64", ExactSpelling = true, CharSet = CharSet.Unicode)]
 		static extern IntPtr zipOpen_64(string fileName, int append);
 
-		internal static IntPtr zipOpen(string fileName, int append)
+		internal static IntPtr zipOpen(string fileName, bool append)
 		{
 			setOpenUnicode(true);
 
 			if (Is64)
-				return zipOpen_64(fileName, append);
+				return zipOpen_64(fileName, append ? 1 : 0);
 			else
-				return zipOpen_32(fileName, append);
+				return zipOpen_32(fileName, append ? 1 : 0);
 		}
 		/*
 			Open a file in the ZIP for writing.

@@ -36,7 +36,7 @@ namespace ZLibNet
 		{
 			_fileName = fileName;
 
-			_handle = Minizip.zipOpen(fileName, 0 /* 0 = create new, 1 = append */ );
+			_handle = Minizip.zipOpen(fileName, false /* false = create new, true = append */ );
 			if (_handle == IntPtr.Zero)
 			{
 				string msg = String.Format("Could not open zip file '{0}' for writing.", fileName);
