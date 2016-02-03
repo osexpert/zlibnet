@@ -119,10 +119,10 @@ namespace ZLibNet
 			}
 
 			Encoding encoding = entry.UTF8Encoding ? Encoding.UTF8 : Minizip.OEMEncoding;
-			byte[] name = encoding.GetBytes(nameForZip);
+			byte[] name = encoding.GetBytes(nameForZip + Char.MinValue); // add nullterm
 			byte[] comment = null;
 			if (entry.Comment != null)
-				comment = encoding.GetBytes(entry.Comment);
+				comment = encoding.GetBytes(entry.Comment + Char.MinValue); // add nullterm
 
 			int result = Minizip.zipOpenNewFileInZip4_64(
 				_handle,

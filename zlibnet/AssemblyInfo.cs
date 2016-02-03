@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 [assembly: AssemblyCopyright("Copyright (C) Gerry Shaw, Dave F. Baskin, Gunnar Dalsnes")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
-[assembly: AssemblyVersion("1.3.1")]
+[assembly: AssemblyVersion("1.3.2")]
 
 
 public static class ZLibDll
