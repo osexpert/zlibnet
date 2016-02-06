@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Text;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
+using System.IO;
+using System.Reflection;
 
 namespace ZLibNet
 {
@@ -17,12 +19,11 @@ namespace ZLibNet
 		const int Z_DEFLATED = 8;
 		/* The deflate compression method (the only one supported in this version) */
 
-		static bool Is64 = (IntPtr.Size == 8);
-
 		static ZLib()
 		{
 			DllLoader.Load();
 		}
+
 
 		[DllImport(ZLibDll.Name32, EntryPoint = "inflateInit2_", ExactSpelling = true, CharSet = CharSet.Ansi)]
 		static extern int inflateInit2_32(ref z_stream strm, int windowBits, string version, int stream_size);
@@ -31,7 +32,7 @@ namespace ZLibNet
 
 		internal static int inflateInit(ref z_stream strm, ZLibOpenType windowBits)
 		{
-			if (Is64)
+			if (ZLibDll.Is64)
 				return inflateInit2_64(ref strm, (int)windowBits, ZLib.ZLibVersion, Marshal.SizeOf(typeof(z_stream)));
 			else
 				return inflateInit2_32(ref strm, (int)windowBits, ZLib.ZLibVersion, Marshal.SizeOf(typeof(z_stream)));
@@ -46,7 +47,7 @@ namespace ZLibNet
 
 		internal static int deflateInit(ref z_stream strm, CompressionLevel level, ZLibWriteType windowBits)
 		{
-			if (Is64)
+			if (ZLibDll.Is64)
 				return deflateInit2_64(ref strm, (int)level, Z_DEFLATED, (int)windowBits, DEF_MEM_LEVEL,
 					Z_DEFAULT_STRATEGY, ZLibVersion, Marshal.SizeOf(typeof(z_stream)));
 			else
@@ -61,7 +62,7 @@ namespace ZLibNet
 
 		internal static int inflate(ref z_stream strm, ZLibFlush flush)
 		{
-			if (Is64)
+			if (ZLibDll.Is64)
 				return inflate_64(ref strm, flush);
 			else
 				return inflate_32(ref strm, flush);
@@ -74,7 +75,7 @@ namespace ZLibNet
 
 		internal static int deflate(ref z_stream strm, ZLibFlush flush)
 		{
-			if (Is64)
+			if (ZLibDll.Is64)
 				return deflate_64(ref strm, flush);
 			else
 				return deflate_32(ref strm, flush);
@@ -87,7 +88,7 @@ namespace ZLibNet
 
 		internal static int inflateEnd(ref z_stream strm)
 		{
-			if (Is64)
+			if (ZLibDll.Is64)
 				return inflateEnd_64(ref strm);
 			else
 				return inflateEnd_32(ref strm);
@@ -100,7 +101,7 @@ namespace ZLibNet
 
 		internal static int deflateEnd(ref z_stream strm)
 		{
-			if (Is64)
+			if (ZLibDll.Is64)
 				return deflateEnd_64(ref strm);
 			else
 				return deflateEnd_32(ref strm);
@@ -113,7 +114,7 @@ namespace ZLibNet
 
 		internal static uint crc32(uint crc, IntPtr buffer, uint len)
 		{
-			if (Is64)
+			if (ZLibDll.Is64)
 				return crc32_64(crc, buffer, len);
 			else
 				return crc32_32(crc, buffer, len);
