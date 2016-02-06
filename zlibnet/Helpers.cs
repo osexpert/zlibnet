@@ -83,10 +83,7 @@ namespace ZLibNet
 
 	public static class DllLoader
 	{
-
-		static bool Is64 = (IntPtr.Size == 8);
-
-
+		
 		[DllImport("kernel32", SetLastError = true, CharSet = CharSet.Unicode)]
 		static extern IntPtr LoadLibrary(string lpFileName);
 
@@ -98,7 +95,7 @@ namespace ZLibNet
 			// Get a temporary directory in which we can store the unmanaged DLL, with
 			// this assembly's version number in the path in order to avoid version
 			// conflicts in case two applications are running at once with different versions
-			string dirName = Path.Combine(Path.GetTempPath(), "zlibnet." + thisAss.GetName().Version.ToString());
+			string dirName = Path.Combine(Path.GetTempPath(), "zlibnet-zlib" + ZLibDll.ZLibDllFileVersion);// thisAss.GetName().Version.ToString());
 
 			try
 			{
@@ -112,11 +109,7 @@ namespace ZLibNet
 					throw;
 			}
 
-			string dll = null;
-			if (Is64)
-				dll = "zlib64.dll";
-			else
-				dll = "zlib32.dll";
+			string dll = ZLibDll.GetDllName();
 			string dllPath = Path.Combine(dirName, dll);
 
 			// Get the embedded resource stream that holds the Internal DLL in this assembly.
