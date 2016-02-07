@@ -1,3 +1,9 @@
+v1.3.2 feb 2016
+target .NET 4.5
+fix rare bug where Zipper could add garbage chars to end of file name (missing nullterm)
+embedd zlib dlls as resources and auto unpack to temp
+fix calling convention in zlib for setOpenUnicode (sometimes got warning in debug)
+
 v1.3	june 2013
 Upgrade zlib to 1.2.8
 Make custom build v1.2.8.1 where 1 bugs fixed: Incorrect move method was sent to SetFilePointer.
