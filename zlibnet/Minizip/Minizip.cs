@@ -21,8 +21,6 @@ namespace ZLibNet
 	/// </remarks>
 	internal static class Minizip
 	{
-		static bool Is64 = (IntPtr.Size == 8);
-
 		[DllImport(ZLibDll.Name32, EntryPoint = "setOpenUnicode", ExactSpelling = true)]
 		static extern int setOpenUnicode_32(int openUnicode);
 		[DllImport(ZLibDll.Name64, EntryPoint = "setOpenUnicode", ExactSpelling = true)]
@@ -31,7 +29,7 @@ namespace ZLibNet
 		internal static bool setOpenUnicode(bool openUnicode)
 		{
 			int oldVal;
-			if (Is64)
+			if (ZLibDll.Is64)
 				oldVal = setOpenUnicode_64(openUnicode ? 1 : 0);
 			else
 				oldVal = setOpenUnicode_32(openUnicode ? 1 : 0);
@@ -60,7 +58,7 @@ namespace ZLibNet
 		{
 			setOpenUnicode(true);
 
-			if (Is64)
+			if (ZLibDll.Is64)
 				return zipOpen_64(fileName, append ? 1 : 0);
 			else
 				return zipOpen_32(fileName, append ? 1 : 0);
@@ -131,7 +129,7 @@ namespace ZLibNet
 			bool zip64
 			)
 		{
-			if (Is64)
+			if (ZLibDll.Is64)
 				return zipOpenNewFileInZip4_64_64(handle, entryName, ref entryInfoPtr, extraField, extraFieldLength,
 					extraFieldGlobal, extraFieldGlobalLength, comment, method, level, 0, -ZLib.MAX_WBITS,
 					ZLib.DEF_MEM_LEVEL, ZLib.Z_DEFAULT_STRATEGY,
@@ -153,7 +151,7 @@ namespace ZLibNet
 
 		internal static int zipWriteInFileInZip(IntPtr handle, IntPtr buffer, uint count)
 		{
-			if (Is64)
+			if (ZLibDll.Is64)
 				return zipWriteInFileInZip_64(handle, buffer, count);
 			else
 				return zipWriteInFileInZip_32(handle, buffer, count);
@@ -167,7 +165,7 @@ namespace ZLibNet
 
 		internal static int zipCloseFileInZip(IntPtr handle)
 		{
-			if (Is64)
+			if (ZLibDll.Is64)
 				return zipCloseFileInZip_64(handle);
 			else
 				return zipCloseFileInZip_32(handle);
@@ -182,7 +180,7 @@ namespace ZLibNet
 
 		internal static int zipClose(IntPtr handle, string comment)
 		{
-			if (Is64)
+			if (ZLibDll.Is64)
 				return zipClose_64(handle, comment);
 			else
 				return zipClose_32(handle, comment);
@@ -203,7 +201,7 @@ namespace ZLibNet
 		{
 			setOpenUnicode(true);
 
-			if (Is64)
+			if (ZLibDll.Is64)
 				return unzOpen_64(fileName);
 			else
 				return unzOpen_32(fileName);
@@ -223,7 +221,7 @@ namespace ZLibNet
 
 		internal static int unzClose(IntPtr handle)
 		{
-			if (Is64)
+			if (ZLibDll.Is64)
 				return unzClose_64(handle);
 			else
 				return unzClose_32(handle);
@@ -243,7 +241,7 @@ namespace ZLibNet
 
 		internal static int unzGetGlobalInfo(IntPtr handle, out ZipFileInfo globalInfoPtr)
 		{
-			if (Is64)
+			if (ZLibDll.Is64)
 				return unzGetGlobalInfo_64(handle, out globalInfoPtr);
 			else
 				return unzGetGlobalInfo_32(handle, out globalInfoPtr);
@@ -264,7 +262,7 @@ namespace ZLibNet
 
 		internal static int unzGetGlobalComment(IntPtr handle, byte[] commentBuffer, uint commentBufferLength)
 		{
-			if (Is64)
+			if (ZLibDll.Is64)
 				return unzGetGlobalComment_64(handle, commentBuffer, commentBufferLength);
 			else
 				return unzGetGlobalComment_32(handle, commentBuffer, commentBufferLength);
@@ -283,7 +281,7 @@ namespace ZLibNet
 
 		internal static int unzGoToFirstFile(IntPtr handle)
 		{
-			if (Is64)
+			if (ZLibDll.Is64)
 				return unzGoToFirstFile_64(handle);
 			else
 				return unzGoToFirstFile_32(handle);
@@ -302,7 +300,7 @@ namespace ZLibNet
 
 		internal static int unzGoToNextFile(IntPtr handle)
 		{
-			if (Is64)
+			if (ZLibDll.Is64)
 				return unzGoToNextFile_64(handle);
 			else
 				return unzGoToNextFile_32(handle);
@@ -369,7 +367,7 @@ namespace ZLibNet
 			byte[] commentBuffer,
 			uint commentBufferLength)
 		{
-			if (Is64)
+			if (ZLibDll.Is64)
 				return unzGetCurrentFileInfo64_64(handle, out entryInfoPtr, entryNameBuffer, entryNameBufferLength, extraField, extraFieldLength,
 					commentBuffer, commentBufferLength);
 			else
@@ -396,7 +394,7 @@ namespace ZLibNet
 
 		internal static int unzOpenCurrentFile(IntPtr handle)
 		{
-			if (Is64)
+			if (ZLibDll.Is64)
 				return unzOpenCurrentFile_64(handle);
 			else
 				return unzOpenCurrentFile_32(handle);
@@ -416,7 +414,7 @@ namespace ZLibNet
 
 		internal static int unzCloseCurrentFile(IntPtr handle)
 		{
-			if (Is64)
+			if (ZLibDll.Is64)
 				return unzCloseCurrentFile_64(handle);
 			else
 				return unzCloseCurrentFile_32(handle);
@@ -438,7 +436,7 @@ namespace ZLibNet
 
 		internal static int unzReadCurrentFile(IntPtr handle, IntPtr buffer, uint count)
 		{
-			if (Is64)
+			if (ZLibDll.Is64)
 				return unzReadCurrentFile_64(handle, buffer, count);
 			else
 				return unzReadCurrentFile_32(handle, buffer, count);
