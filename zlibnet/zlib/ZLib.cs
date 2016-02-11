@@ -178,7 +178,7 @@ namespace ZLibNet
 		BestCompression = 9,
 		// The "real" default is -1. Currently, zlib interpret -1 as 6, but they are free to change the interpretation.
 		// The reason for overriding the default and using 5 is I want this library to match DynaZip's default
-		// compression ratio and speed, and 5 was the best match (6 was somewhat slower that dynazip default).
+		// compression ratio and speed, and 5 was the best match (6 was somewhat slower than dynazip default).
 		Default = 5,
 		Level0 = 0,
 		Level1 = 1,

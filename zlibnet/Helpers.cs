@@ -95,7 +95,7 @@ namespace ZLibNet
 			// Get a temporary directory in which we can store the unmanaged DLL, with
 			// this assembly's version number in the path in order to avoid version
 			// conflicts in case two applications are running at once with different versions
-			string dirName = Path.Combine(Path.GetTempPath(), "zlibnet-zlib" + ZLibDll.ZLibDllFileVersion);// thisAss.GetName().Version.ToString());
+			string dirName = Path.Combine(Path.GetTempPath(), "zlibnet-zlib" + ZLibDll.ZLibDllFileVersion);
 
 			try
 			{
@@ -109,53 +109,53 @@ namespace ZLibNet
 					throw;
 			}
 
-			string dll = ZLibDll.GetDllName();
-			string dllPath = Path.Combine(dirName, dll);
+			string dllName = ZLibDll.GetDllName();
+			string dllFullName = Path.Combine(dirName, dllName);
 
 			// Get the embedded resource stream that holds the Internal DLL in this assembly.
 			// The name looks funny because it must be the default namespace of this project
 			// (MyAssembly.) plus the name of the Properties subdirectory where the
 			// embedded resource resides (Properties.) plus the name of the file.
-			using (Stream stm = thisAss.GetManifestResourceStream("ZLibNet." + dll))
+			if (!File.Exists(dllFullName))
 			{
 				// Copy the assembly to the temporary file
-				string tempFile = null;
-				if (!File.Exists(dllPath))
+				string tempFile = Path.GetTempFileName();
+				using (Stream stm = thisAss.GetManifestResourceStream("ZLibNet." + dllName))
 				{
-					tempFile = Path.GetTempFileName();
-
 					using (Stream outFile = File.Create(tempFile))
 					{
 						stm.CopyTo(outFile);
 					}
+				}
 
+				try
+				{
+					File.Move(tempFile, dllFullName);
+				}
+				catch
+				{
+					// clean up tempfile
 					try
 					{
-						File.Move(tempFile, dllPath);
+						File.Delete(tempFile);
 					}
-					catch (IOException)
+					catch
 					{
-						// dest file already exist? (we raced with other process to create the file)
-						try
-						{
-							File.Delete(tempFile);
-						}
-						catch
-						{
-							// eat
-						}
+						// eat
 					}
 
+					// raced?
+					if (!File.Exists(dllFullName))
+						throw;
 				}
+
 			}
 
-			// We must explicitly load the DLL here because the temporary directory 
-			// is not in the PATH.
-			// Once it is loaded, the DllImport directives that use the DLL will use
-			// the one that is already loaded into the process.
-			IntPtr h = LoadLibrary(dllPath);
-			if (h == IntPtr.Zero)
-				throw new Exception("Can't load " + dllPath);
+			// We must explicitly load the DLL here because the temporary directory is not in the PATH.
+			// Once it is loaded, the DllImport directives that use the DLL will use the one that is already loaded into the process.
+			IntPtr hFile = LoadLibrary(dllFullName);
+			if (hFile == IntPtr.Zero)
+				throw new Exception("Can't load " + dllFullName);
 		}
 	}
 }
