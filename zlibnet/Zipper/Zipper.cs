@@ -50,6 +50,7 @@ namespace ZLibNet
 		//
 		// The most logical would be to add *.* automatically if no file/mask specified,
 		// but keep DZ compat for now. Maybe change later.
+		// TODO: add recursive options for every item?
 		/// </summary>
 		public List<string> ItemList = new List<string>();
 		/// <summary>
