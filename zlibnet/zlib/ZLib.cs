@@ -192,7 +192,7 @@ namespace ZLibNet
 		Level9 = 9
 	}
 
-	[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+	[StructLayout(LayoutKind.Sequential)]
 	struct z_stream
 	{
 		public IntPtr next_in;  /* next input byte */
@@ -203,8 +203,7 @@ namespace ZLibNet
 		public uint avail_out; /* remaining free space at next_out */
 		public uint total_out; /* total nb of bytes output so far */
 
-		//[MarshalAs(UnmanagedType.LPStr)]
-		private IntPtr lasterrormsg_;      /* last error message, NULL if no error */
+		private IntPtr msg;      /* last error message, NULL if no error */
 
 		private IntPtr state; /* not visible by applications */
 
@@ -220,8 +219,7 @@ namespace ZLibNet
 		{
 			get
 			{
-				//Marshal.StructureToPtr(
-				return Marshal.PtrToStringAnsi(lasterrormsg_);
+				return Marshal.PtrToStringAnsi(msg);
 			}
 		}
 	}
