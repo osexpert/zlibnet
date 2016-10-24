@@ -203,8 +203,8 @@ namespace ZLibNet
 		public uint avail_out; /* remaining free space at next_out */
 		public uint total_out; /* total nb of bytes output so far */
 
-//		[MarshalAs(UnmanagedType.LPStr)]
-		public string lasterrormsg;      /* last error message, NULL if no error */
+		//[MarshalAs(UnmanagedType.LPStr)]
+		private IntPtr lasterrormsg_;      /* last error message, NULL if no error */
 
 		private IntPtr state; /* not visible by applications */
 
@@ -216,14 +216,14 @@ namespace ZLibNet
 		public uint adler;      /* adler32 value of the uncompressed data */
 		private uint reserved;   /* reserved for future use */
 
-		//public string lasterrormsg
-		//{
-		//    get
-		//    {
-		//        Marshal.StructureToPtr(
-		//        return Marshal.PtrToStringAnsi(msg);
-		//    }
-		//}
+		public string lasterrormsg
+		{
+			get
+			{
+				//Marshal.StructureToPtr(
+				return Marshal.PtrToStringAnsi(lasterrormsg_);
+			}
+		}
 	}
 
 	internal static class ZLibReturnCode
