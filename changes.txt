@@ -1,3 +1,6 @@
+v1.3.3 nov 2016
+fix heap corruption in ZLibStream when trying to decompress corrupted/invalid data
+
 v1.3.2 feb 2016
 target .NET 4.5
 fix rare bug where Zipper could add garbage chars to end of file name (missing nullterm)
