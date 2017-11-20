@@ -6,12 +6,10 @@ Compression test:
 Original size: 3 443 130 254
 
 zlibnet
-compressed (default): 1,09 GB (1 178 180 638 bytes)
-time: 00:02:39.9731499
+compressed (default): 1,09 GB (1 178 180 638 bytes) time: 00:02:39.9731499
 
 .NET 4.5 ZipArchive
-compressed (optimal): 1,08 GB (1 168 227 240 bytes)
-time: 00:03:05.2803074
+compressed (optimal): 1,08 GB (1 168 228 598 bytes) time: 00:03:00.2553101
+compressed (fastest): 1,18 GB (1 270 258 799 bytes) time: 00:02:00.8949148
 
-zlibnet is 25 seconds faster.
 ZipArchive performace is actually not that bad:-)
