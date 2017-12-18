@@ -162,9 +162,23 @@ namespace ZLibNet
 
 						if (zlibError == ZLibReturnCode.StreamEnd)
 						{
-							pWorkDataPos = -1; // magic for StreamEnd
-							break;
-						}
+						    if (OpenType == ZLibOpenType.GZip && BaseStream.Position < BaseStream.Length)
+						    {
+						        zlibError = ZLib.inflateReset(ref pZstream); // Reset for next gzip record, if any
+
+						        if (zlibError != ZLibReturnCode.Ok)
+						        {
+						            pWorkDataPos = -1;
+						            break;
+						        }
+                            }
+						    else
+						    {
+						        pWorkDataPos = -1; // magic for StreamEnd
+						        break;
+                            }
+                        }
+
 						else if (zlibError != ZLibReturnCode.Ok)
 						{
 							pSuccess = false;
