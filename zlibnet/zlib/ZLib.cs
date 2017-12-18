@@ -107,7 +107,33 @@ namespace ZLibNet
 				return deflateEnd_32(ref strm);
 		}
 
-		[DllImport(ZLibDll.Name32, EntryPoint = "crc32", ExactSpelling = true)]
+	    [DllImport(ZLibDll.Name32, EntryPoint = "deflateReset", ExactSpelling = true)]
+	    static extern int deflateReset_32(ref z_stream strm);
+	    [DllImport(ZLibDll.Name64, EntryPoint = "deflateReset", ExactSpelling = true)]
+	    static extern int deflateReset_64(ref z_stream strm);
+
+	    internal static int deflateReset(ref z_stream strm)
+	    {
+	        if (ZLibDll.Is64)
+	            return deflateReset_64(ref strm);
+	        else
+	            return deflateReset_32(ref strm);
+	    }
+
+	    [DllImport(ZLibDll.Name32, EntryPoint = "inflateReset", ExactSpelling = true)]
+	    static extern int inflateReset_32(ref z_stream strm);
+	    [DllImport(ZLibDll.Name64, EntryPoint = "inflateReset", ExactSpelling = true)]
+	    static extern int inflateReset_64(ref z_stream strm);
+
+	    internal static int inflateReset(ref z_stream strm)
+	    {
+	        if (ZLibDll.Is64)
+	            return inflateReset_64(ref strm);
+	        else
+	            return inflateReset_32(ref strm);
+	    }
+
+        [DllImport(ZLibDll.Name32, EntryPoint = "crc32", ExactSpelling = true)]
 		static extern uint crc32_32(uint crc, IntPtr buffer, uint len);
 		[DllImport(ZLibDll.Name64, EntryPoint = "crc32", ExactSpelling = true)]
 		static extern uint crc32_64(uint crc, IntPtr buffer, uint len);
